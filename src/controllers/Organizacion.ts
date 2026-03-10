@@ -51,4 +51,22 @@ const deleteOrganizacion = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-export default { createOrganizacion, readOrganizacion, readAll, updateOrganizacion, deleteOrganizacion };
+// NUEVO: obtener usuarios por organización (requisito #3)
+const readUsuariosPorOrganizacion = async (req: Request, res: Response, next: NextFunction) => {
+    const organizacionId = req.params.organizacionId;
+    
+    try {
+        // Validar que existe la org
+        const organizacion = await OrganizacionService.getOrganizacion(organizacionId);
+        if (!organizacion) {
+            return res.status(404).json({ message: 'Organización no encontrada' });
+        }
+        // Obtener usuarios filtrados
+        const usuarios = await OrganizacionService.getUsuariosPorOrganizacion(organizacionId);
+        return res.status(200).json(usuarios);
+    } catch (error) {
+        return res.status(500).json({ error });
+    }
+};
+
+export default { createOrganizacion, readOrganizacion, readAll, updateOrganizacion, deleteOrganizacion, readUsuariosPorOrganizacion };

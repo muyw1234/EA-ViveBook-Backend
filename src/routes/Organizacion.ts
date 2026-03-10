@@ -89,9 +89,10 @@ router.get('/:organizacionId', controller.readOrganizacion);
  *   get:
  *     summary: Lista todas las organizaciones
  *     tags: [Organizaciones]
+ *     description: |\n *       Retorna un array de todas las organizaciones.\n *       IMPORTANTE: Cada organización incluye su campo 'usuarios' poblado\n *       mediante el virtual de Mongoose (sin hacer query).
  *     responses:
  *       200:
- *         description: OK
+ *         description: OK - Array de organizaciones con usuarios
  *         content:
  *           application/json:
  *             schema:
@@ -100,6 +101,34 @@ router.get('/:organizacionId', controller.readOrganizacion);
  *                 $ref: '#/components/schemas/Organizacion'
  */
 router.get('/', controller.readAll);
+
+/**
+ * @openapi
+ * /organizaciones/{organizacionId}/usuarios:
+ *   get:
+ *     summary: Obtiene todos los usuarios de una organización específica
+ *     tags: [Organizaciones]
+ *     description: |\n *       **NUEVO ENDPOINT - SEMINARIO OPCIÓN B (Virtuals)**\n *       \n *       Filtra todos los usuarios que pertenecen a una organización.\n *       \n *       Implementación:\n *       - Servicio: Usuario.find({ organizacion: organizacionId })\n *       - Optimización: .lean() para retornar objetos JS planos\n *       - Validación: Verifica que la organización existe (404 si no)\n *     parameters:
+ *       - in: path
+ *         name: organizacionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ObjectId de la organización (24 caracteres hex)
+ *         example: "65f1c2a1b2c3d4e5f6789013"
+ *     responses:
+ *       200:
+ *         description: OK - Array de usuarios de esa organización
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Usuario'
+ *       404:
+ *         description: Organización no encontrada
+ */
+router.get('/:organizacionId/usuarios', controller.readUsuariosPorOrganizacion);
 
 /**
  * @openapi
@@ -140,6 +169,7 @@ router.put('/:organizacionId', ValidateJoi(Schemas.organizacion.update), control
  *   delete:
  *     summary: Elimina una organización por ID
  *     tags: [Organizaciones]
+ *     description: |\n *       Borra la organización Y todos sus usuarios asociados (borrado en cascada).\n *       \n *       El pre-delete middleware en el modelo Organizacion se ejecuta automáticamente:\n *       1. Busca todos los usuarios de esa organización\n *       2. Los elimina primero (Usuario.deleteMany())\n *       3. Luego elimina la organización\n *       \n *       Esto mantiene la integridad referencial: no hay usuarios huérfanos.
  *     parameters:
  *       - in: path
  *         name: organizacionId
@@ -149,10 +179,11 @@ router.put('/:organizacionId', ValidateJoi(Schemas.organizacion.update), control
  *         description: ObjectId de la organización
  *     responses:
  *       200:
- *         description: Eliminado correctamente
+ *         description: Eliminado correctamente (org + todos sus usuarios)
  *       404:
  *         description: No encontrado
  */
+// Borra org + todos sus usuarios (cascade delete via pre-delete middleware)
 router.delete('/:organizacionId', controller.deleteOrganizacion);
 
 export default router;
