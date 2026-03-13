@@ -48,7 +48,7 @@ export const Schemas = {
     libro: {
         create: Joi.object<ILibro>({
             title: Joi.string().required(),
-            author: Joi.string().required(),
+            author: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
             description: Joi.string().required(),
             price: Joi.number().required(),
             type: Joi.string().valid('VENTA', 'ALQUILER').required(),
@@ -57,7 +57,7 @@ export const Schemas = {
         }),
         update: Joi.object<ILibro>({
             title: Joi.string().required(),
-            author: Joi.string().required(),
+            author: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
             description: Joi.string().required(),
             price: Joi.number().required(),
             type: Joi.string().valid('VENTA', 'ALQUILER').required(),
