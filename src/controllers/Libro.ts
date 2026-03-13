@@ -18,7 +18,7 @@ const createLibro = async (req: Request, res: Response, next: NextFunction) => {
 const getLibro = async (req: Request, res: Response, next: NextFunction) => {
     const libroId = req.params.libroId;
     try {
-        const libro = await Libro.findById(libroId).populate('owner libreria');
+        const libro = await Libro.findById(libroId).populate('author owner libreria');
         return libro ? res.status(200).json(libro) : res.status(404).json({ message: 'not found' });
     } catch (error) {
         return res.status(500).json({ error });
@@ -27,7 +27,7 @@ const getLibro = async (req: Request, res: Response, next: NextFunction) => {
 
 const getAllLibros = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const libros = await Libro.find().populate('owner libreria');
+        const libros = await Libro.find().populate('author owner libreria');
         return res.status(200).json(libros);
     } catch (error) {
         return res.status(500).json({ error });

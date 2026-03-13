@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ILibro {
     title: string;
-    author: string;
+    author: mongoose.Types.ObjectId | string;
     description: string;
     price: number;
     type: 'VENTA' | 'ALQUILER';
@@ -10,12 +10,12 @@ export interface ILibro {
     libreria?: mongoose.Types.ObjectId | string;
 }
 
-export interface ILibroModel extends ILibro, Document { }
+export interface ILibroModel extends ILibro, Document {}
 
 const LibroSchema: Schema = new Schema(
     {
         title: { type: String, required: true },
-        author: { type: String, required: true },
+        author: { type: Schema.Types.ObjectId, ref: 'Autor', required: true },
         description: { type: String, required: true },
         price: { type: Number, required: true },
         type: { type: String, enum: ['VENTA', 'ALQUILER'], required: true },

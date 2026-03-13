@@ -7,6 +7,7 @@ import Logging from './library/Logging';
 import usuarioRoutes from './routes/Usuario';
 import libreriaRoutes from './routes/Libreria';
 import libroRoutes from './routes/Libro';
+import autorRoutes from './routes/Autor';
 import eventoRoutes from './routes/Evento';
 import chatRoutes from './routes/Chat';
 import mensajeRoutes from './routes/Mensaje';
@@ -54,6 +55,7 @@ const StartServer = () => {
     router.use('/usuarios', usuarioRoutes);
     router.use('/librerias', libreriaRoutes);
     router.use('/libros', libroRoutes);
+    router.use('/autores', autorRoutes);
     router.use('/eventos', eventoRoutes);
     router.use('/chats', chatRoutes);
     router.use('/mensajes', mensajeRoutes);
