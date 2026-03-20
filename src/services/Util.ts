@@ -21,7 +21,7 @@ export async function callGoogleApi(isbn: string): Promise<ILibro> {
             let buffer = response.data.items[0].volumeInfo;
             const res: ILibro = {
                 title: buffer.title,
-                isbn: buffer.industryIdentifiers[0].identifier,
+                isbn: buffer.industryIdentifiers[1].identifier,
                 authors: buffer.authors as string[],
                 IsDeleted: false
             };
