@@ -224,4 +224,38 @@ router.put('/:libroId', ValidateJoi(Schemas.libro.update), controller.updateLibr
  */
 router.delete('/:libroId', controller.deleteLibro);
 
+/**
+ * @openapi
+ * /libros/isbn/{isbn}:
+ *   get:
+ *     summary: Crea un libro a partir de un ISBN
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: path
+ *         name: isbn
+ *         required: true
+ *         description: El ISBN
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         descripion: El lirbo ya existia
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Libro'
+ *       201:
+ *         descripion: Libro agregado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Libro'
+ *       500:
+ *         description: Server's controller error.
+ *       404:
+ *         description: The product with that id was not find.
+ */
+router.get('/isbn/:isbn', controller.createLibroByIsbn);
+
 export default router;

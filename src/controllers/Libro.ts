@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import LibroService from '../services/Libro';
+import Logging from '../library/Logging';
 
 const createLibro = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -62,5 +63,19 @@ const deleteLibro = async (req: Request, res: Response, next: NextFunction) => {
         return res.status(500).json({ error });
     }
 };
+/** Para testing */
+export async function createLibroByIsbn(req: Request, res: Response, next: NextFunction) {
+    const isbn = req.params.isbn;
 
-export default { createLibro, getLibro, getAllLibros, getAllLibros_NOT_Deleted, updateLibro, deleteLibro };
+    try {
+        const libro = await LibroService.getLibroByIsbn(isbn);
+        Logging.info(`Book found: ${libro}`);
+        if (libro !== null) return res.status(200).json(libro);
+        const libroSaved = await LibroService.createLibroByIsbn(isbn);
+        return res.status(201).json(libroSaved);
+    } catch (error) {
+        return res.status(500).json({ error });
+    }
+}
+
+export default { createLibro, getLibro, getAllLibros, getAllLibros_NOT_Deleted, updateLibro, deleteLibro, createLibroByIsbn };
