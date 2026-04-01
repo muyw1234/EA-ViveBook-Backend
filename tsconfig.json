@@ -6,7 +6,8 @@
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "typeRoots": ["@types", "./node_modules/@types/express"]
     },
     "include": ["src/**/*", "src/models/.ts"]
 }

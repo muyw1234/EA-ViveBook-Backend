@@ -11,6 +11,7 @@ import autorRoutes from './routes/Autor';
 import eventoRoutes from './routes/Evento';
 import chatRoutes from './routes/Chat';
 import mensajeRoutes from './routes/Mensaje';
+import authRoutes from './routes/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 
@@ -55,6 +56,7 @@ const StartServer = () => {
     router.use('/eventos', eventoRoutes);
     router.use('/chats', chatRoutes);
     router.use('/mensajes', mensajeRoutes);
+    router.use('/auth', authRoutes);
 
     /** Healthcheck */
     router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));

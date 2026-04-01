@@ -115,5 +115,13 @@ export const Schemas = {
                 .required(),
             content: Joi.string().required()
         })
-    }
+    },
+    /*
+        Viene del esquema del ejercicio
+
+    */
+    signIn: Joi.object<IUsuario>({
+        email: Joi.string().email().required(),
+        password: Joi.string().min(6).required()
+    })
 };

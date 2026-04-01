@@ -27,10 +27,26 @@ const UsuarioSchema: Schema = new Schema(
     }
 );
 
-UsuarioSchema.methods.encryptPassaword = async (password: string): Promise<string> => {
+// Esto hashea solamenet en la ruta de sign up.
+UsuarioSchema.methods.encryptPassword = async function (password: string): Promise<string> {
     const salt = await bcrypt.genSalt(10); // el algoritmo se aplica 10 veces
     return bcrypt.hash(password, salt);
 };
+
+// Esto hashea la contraseña independientemente de que ruta tomas, pero con lo anterior ya nos vale.
+// UsuarioSchema.pre<IUsuarioModel>('save', async function (next) {
+//     if (!this.isModified('password')) {
+//         return next();
+//     }
+
+//     try {
+//         const salt = await bcrypt.genSalt(10);
+//         this.password = await bcrypt.hash(this.password, salt);
+//         next();
+//     } catch (error: any) {
+//         next(error);
+//     }
+// });
 
 UsuarioSchema.methods.validatePassword = async function (password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
