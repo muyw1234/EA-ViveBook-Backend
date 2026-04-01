@@ -1,9 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import UsuarioService from '../services/Usuario';
-import Usuario, { IUsuarioModel } from '../models/Usuario';
-import jwt from 'jsonwebtoken';
-import { config } from '../config/config';
 
 const createUsuario = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -64,7 +61,7 @@ const deleteUsuario = async (req: Request, res: Response, next: NextFunction) =>
 
 const restoreUsuario = async (req: Request, res: Response, next: NextFunction) => {
     const usuarioId = req.params.usuarioId;
-    try {
+    try {        
         const usuario = await UsuarioService.restoreUsuario(usuarioId);
         return usuario ? res.status(200).json(usuario) : res.status(404).json({ message: 'not found' });
     } catch (error) {

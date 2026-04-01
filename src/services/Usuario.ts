@@ -13,10 +13,6 @@ const getUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> => {
     return await Usuario.findById(usuarioId).populate('libros', 'title');
 };
 
-const getUsuarioByEmail = async (theEmail: string): Promise<IUsuarioModel | null> => {
-    return await Usuario.findOne({ email: theEmail });
-};
-
 const getAllUsuarios = async (): Promise<IUsuarioModel[]> => {
     return await Usuario.find().populate('libros', 'title');
 };
@@ -39,7 +35,9 @@ const deleteUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> =
 };
 
 const restoreUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> => {
-    return await Usuario.findByIdAndUpdate(usuarioId, { IsDeleted: false }, { new: true });
+    return await Usuario.findByIdAndUpdate(usuarioId,
+        { IsDeleted: false }, 
+        { new: true }); 
 };
 
-export default { createUsuario, getUsuario, getAllUsuarios, getUsuarioByEmail, getAllUsuarios_NOT_Deleted, updateUsuario, deleteUsuario, restoreUsuario };
+export default { createUsuario, getUsuario, getAllUsuarios, getAllUsuarios_NOT_Deleted, updateUsuario, deleteUsuario, restoreUsuario };
