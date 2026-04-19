@@ -9,6 +9,7 @@ import { IMensaje } from '../models/Mensaje';
 import Logging from '../library/Logging';
 import { IAutor } from '../models/Autor';
 import { isBindingName } from 'typescript';
+import { IPost } from '../models/Post';
 
 export const ValidateJoi = (schema: ObjectSchema) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -114,6 +115,24 @@ export const Schemas = {
                 .regex(/^[0-9a-fA-F]{24}$/)
                 .required(),
             content: Joi.string().required()
+        })
+    },
+    post: {
+        create: Joi.object<IPost>({
+            description: Joi.string().required(),
+            status: Joi.string().valid('VENTA', 'ALQUILER', 'NO_DISPONIBLE').required(),
+            imageUrl: Joi.string().uri().optional(),
+            IsDeleted: Joi.bool().optional(),
+            ownerId: Joi.string().required(),
+            bookId: Joi.string().required()
+        }),
+        update: Joi.object<IPost>({
+            description: Joi.string().optional(),
+            status: Joi.string().valid('VENTA', 'ALQUILER', 'NO_DISPONIBLE').optional(),
+            imageUrl: Joi.string().uri().optional(),
+            IsDeleted: Joi.bool().optional(),
+            ownerId: Joi.string().optional(),
+            bookId: Joi.string().optional()
         })
     },
     /*

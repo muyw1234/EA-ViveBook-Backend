@@ -26,7 +26,11 @@ export async function createLibro(data: Partial<ILibro>): Promise<ILibro | null>
     });
     return await libro.save();
 }
-export async function createLibroByIsbn(isbn: string): Promise<ILibro | null> {
+export async function createLibroByIsbn(isbn: string): Promise<ILibroModel | null> {
+    // Primero comprobamos que el libro existe o no. No poner esto al principio no me daba error, pero es por si acaso.
+    let isFound = await getLibroByIsbn(isbn);
+    if (isFound !== null) return isFound;
+    // Si no existe entonces lo creamos.
     let data: ILibro = await callOpenLibraryBookApi(isbn);
     //Logging.info(`Libro found: ${JSON.stringify(data)}`);
     let autores = [];
@@ -69,7 +73,7 @@ export async function restoreLibro(libroId: string): Promise<ILibro | null> {
     return await Libro.findByIdAndUpdate(libroId, { IsDeleted: false }, { new: true });
 }
 
-export async function getLibroByIsbn(isbn: string): Promise<ILibro | null> {
+export async function getLibroByIsbn(isbn: string): Promise<ILibroModel | null> {
     return await Libro.findOne({ isbn: isbn });
 }
 

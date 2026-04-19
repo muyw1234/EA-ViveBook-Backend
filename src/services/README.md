@@ -8,10 +8,15 @@
 - `updateLibro(id: string, data: ILibro) : Promise<ILibro|null>` Actualiza el libro con ese id y pasando los nuevos datos. Devuelve el libro actualizado.
 - `getAllLibros_NOT_Deleted()` Obtiene todos los libros que no han sido soft deleted.
 - `deleteLibro(id: string) : Promise<ILibro|null>` Elimina el libro especificado por ese id y devuelve el libro recien eliminado.
-- `createLibroByIsbn(isbn: string) : Promise<ILibro|null>` Crea un libro basado en el isbn, los datos los obtenemos de la api de OpenLibrary.
+- `createLibroByIsbn(isbn: string) : Promise<ILibro|null>` Crea un libro basado en el isbn, los datos los obtenemos de la api de OpenLibrary si es que no existe tal libro en la base de datos, de lo
+  contrario, devuelve la entrada existente.
 - `getLibroByIsbn(isbn : string)` : Busca el libro con esa ISBN.
 
-## Autor:
+## Autor
 
 - `getByName(fullName: string)` : Devuelve el modelo de autor con ese nombre.
 - `createAutor(data: Partial<IAutor>)` : Crea y guarda el autor a partir de la instancia parcial de autor.
+
+## Post
+
+- `createPostByIsbn( isbn: string, data: Partial<IPost>)` : Crea un post a partir de la isbn del libro. Esta es el entrypoint que debe usarse en la app.
