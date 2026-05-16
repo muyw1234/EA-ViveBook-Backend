@@ -24,3 +24,5 @@ export default defineConfig([
 ]);
 
 // Mirar la documentació a https://eslint.org/docs/latest/rules
+
+// https://prettier.io/docs/install
