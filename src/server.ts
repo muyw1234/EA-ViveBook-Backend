@@ -24,65 +24,65 @@ const router = express();
 
 /** Connect to Mongo */
 mongoose
-    .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
-    .then(() => {
-        Logging.info('Mongo connected successfully.');
-        ensureGlobalChat();
-        StartServer();
-    })
-    .catch((error) => Logging.error(error));
+  .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
+  .then(() => {
+    Logging.info('Mongo connected successfully.');
+    ensureGlobalChat();
+    StartServer();
+  })
+  .catch((error) => Logging.error(error));
 
 /** Only Start Server if Mongoose Connects */
 const StartServer = () => {
-    /** Log the request */
-    router.use(pinoHttp({ logger: Logging.logger }));
+  /** Log the request */
+  router.use(pinoHttp({ logger: Logging.logger }));
 
-    router.use(express.urlencoded({ extended: true }));
-    router.use(express.json());
+  router.use(express.urlencoded({ extended: true }));
+  router.use(express.json());
 
-    /** Rules of our API */
-    router.use(cors());
+  /** Rules of our API */
+  router.use(cors());
 
-    /** Swagger */
-    router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  /** Swagger */
+  router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-    /** Routes */
-    router.use('/usuarios', usuarioRoutes);
-    router.use('/librerias', libreriaRoutes);
-    router.use('/libros', libroRoutes);
-    router.use('/autores', autorRoutes);
-    router.use('/eventos', eventoRoutes);
-    router.use('/chats', chatRoutes);
-    router.use('/mensajes', mensajeRoutes);
-    router.use('/auth', authRoutes);
-    router.use('/posts', postRoutes);
+  /** Routes */
+  router.use('/usuarios', usuarioRoutes);
+  router.use('/librerias', libreriaRoutes);
+  router.use('/libros', libroRoutes);
+  router.use('/autores', autorRoutes);
+  router.use('/eventos', eventoRoutes);
+  router.use('/chats', chatRoutes);
+  router.use('/mensajes', mensajeRoutes);
+  router.use('/auth', authRoutes);
+  router.use('/posts', postRoutes);
 
-    /** Healthcheck */
-    router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
+  /** Healthcheck */
+  router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 
-    /** Error handling */
-    router.use((req, res, next) => {
-        const error = new Error('Not found');
+  /** Error handling */
+  router.use((req, res, next) => {
+    const error = new Error('Not found');
 
-        Logging.error(error);
+    Logging.error(error);
 
-        res.status(404).json({
-            message: error.message
-        });
+    res.status(404).json({
+      message: error.message,
     });
+  });
 
-    const httpServer = http.createServer(router);
-    const io = new Server(httpServer, {
-        cors: {
-            origin: '*',
-            methods: ['GET', 'POST']
-        }
-    });
+  const httpServer = http.createServer(router);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST'],
+    },
+  });
 
-    socketHandler(io);
+  socketHandler(io);
 
-    httpServer.listen(config.server.port, () => {
-        Logging.info(`Server is running on port ${config.server.port}`);
-        Logging.info(`Access Swagger at http://localhost:${config.server.port}/swagger`);
-    });
+  httpServer.listen(config.server.port, () => {
+    Logging.info(`Server is running on port ${config.server.port}`);
+    Logging.info(`Access Swagger at http://localhost:${config.server.port}/swagger`);
+  });
 };

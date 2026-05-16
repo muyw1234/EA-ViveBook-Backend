@@ -336,7 +336,13 @@ router.get('/', TokenValidation, controller.getAllUsuarios_NOT_Deleted);
  *       422:
  *         description: Error de validación en los datos enviados
  */
-router.put('/:usuarioId', TokenValidation, isAdmin, ValidateJoi(Schemas.usuario.update), controller.updateUsuario);
+router.put(
+  '/:usuarioId',
+  TokenValidation,
+  isAdmin,
+  ValidateJoi(Schemas.usuario.update),
+  controller.updateUsuario,
+);
 
 /**
  * @openapi

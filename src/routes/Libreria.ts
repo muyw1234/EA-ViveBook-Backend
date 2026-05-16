@@ -190,7 +190,7 @@ router.delete('/:libreriaId', controller.deleteLibreria);
  * @openapi
  * /librerias/{libreriaId}/restaurar:
  *   post:
- *     summary: Restaura una librería eliminada por ID  
+ *     summary: Restaura una librería eliminada por ID
  *     tags: [Librerias]
  *     parameters:
  *       - in: path
