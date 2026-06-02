@@ -184,5 +184,6 @@ router.post('/signup', ValidateJoi(Schemas.usuario.create), Auth.signup);
  *         description: No autorizado, token inválido o ausente
  */
 router.get('/profile', TokenValidation, Auth.profile);
+router.get('/profile/libros', TokenValidation, Auth.getProfileLibros);
 
 export default router;

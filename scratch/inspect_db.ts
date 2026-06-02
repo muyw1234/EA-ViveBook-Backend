@@ -14,13 +14,13 @@ async function inspectDB() {
         const Libro = mongoose.model('Libro', new mongoose.Schema({}, { strict: false }));
         const Usuario = mongoose.model('Usuario', new mongoose.Schema({}, { strict: false }));
         
-        const books = await Libro.find({});
+        const books = await Libro.find({}) as any[];
         console.log(`Total books: ${books.length}`);
         books.forEach(b => console.log(`Book: ${b.title} (${b._id})`));
         
-        const users = await Usuario.find({});
+        const users = await Usuario.find({}) as any[];
         console.log(`Total users: ${users.length}`);
-        users.forEach(u => console.log(`User: ${u.email} (${u._id}), libros: ${JSON.stringify(u.libros)}`));
+        users.forEach(u => console.log(`User: ${u.email} (${u._id}), wishlist: ${JSON.stringify(u.wishlist)}, favoriteBooks: ${JSON.stringify(u.favoriteBooks)}`));
         
     } catch (error) {
         console.error('Error inspecting database:', error);
