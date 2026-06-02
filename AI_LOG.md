@@ -237,4 +237,4 @@ Añade una sección en el README.md con titulo implementación MINIMO 2 donde se
 
 **Solució**
 
-- Elimiinarlas.
+- Eliminarlas.
