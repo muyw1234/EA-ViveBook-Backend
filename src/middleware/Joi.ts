@@ -212,5 +212,21 @@ export const Schemas = {
             puntuacion: Joi.number().min(1).max(5).required(),
             comentario: Joi.string().optional().allow('')
         })
+    },
+    recomendacion: {
+        create: Joi.object({
+            query: Joi.string().trim().min(3).required(),
+            limit: Joi.number().integer().min(1).max(20).optional(),
+            includeDeleted: Joi.boolean().optional(),
+            context: Joi.array()
+                .items(
+                    Joi.string().trim().min(1),
+                    Joi.object({
+                        title: Joi.string().trim().optional(),
+                        text: Joi.string().trim().min(1).required()
+                    })
+                )
+                .optional()
+        })
     }
 };

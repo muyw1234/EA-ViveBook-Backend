@@ -14,6 +14,12 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || 'Pon el tuyo';
 const CLOUDINARY_SECRET = process.env.CLOUDINARY_SECRET || 'Pon el turo';
 const CLOUDINARY_NAME = process.env.CLOUDINARY_NAME || 'Pon el tuyo';
+const WEAVIATE_HOST = process.env.WEAVIATE_HOST || 'localhost';
+const WEAVIATE_PORT = process.env.WEAVIATE_PORT ? Number(process.env.WEAVIATE_PORT) : 8081;
+const WEAVIATE_SCHEME = process.env.WEAVIATE_SCHEME || 'http';
+const LLM_BASE_URL = process.env.LLM_BASE_URL || 'http://localhost:8080';
+const LLM_MODEL = process.env.LLM_MODEL || 'qwen2.5:14b';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'embeddinggemma';
 
 export const config = {
     mongo: {
@@ -34,5 +40,16 @@ export const config = {
         apiKey: CLOUDINARY_API_KEY,
         secret: CLOUDINARY_SECRET,
         name: CLOUDINARY_NAME
+    },
+    weaviate: {
+        host: WEAVIATE_HOST,
+        port: WEAVIATE_PORT,
+        scheme: WEAVIATE_SCHEME,
+        url: `${WEAVIATE_SCHEME}://${WEAVIATE_HOST}:${WEAVIATE_PORT}`
+    },
+    ai: {
+        baseUrl: LLM_BASE_URL,
+        llmModel: LLM_MODEL,
+        embeddingModel: EMBEDDING_MODEL
     }
 };
