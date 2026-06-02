@@ -185,4 +185,28 @@ router.post('/signup', ValidateJoi(Schemas.usuario.create), Auth.signup);
  */
 router.get('/profile', TokenValidation, Auth.profile);
 
+/**
+ * @openapi
+ * /auth/update-fcm-token:
+ *   post:
+ *     summary: Actualiza o registra el token de Firebase del dispositivo/navegador del usuario
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *     content:
+ *       application/json:
+ *         schema:
+ *           type: object
+ *           required:
+ *             - fcmToken
+ *           properties:
+ *             fcmToken:
+ *               type: string
+ *               example: fX3...tokensuperlargodefirebase...
+ */
+router.post('/update-fcm-token', TokenValidation, Auth.updateFcmToken);
+
 export default router;

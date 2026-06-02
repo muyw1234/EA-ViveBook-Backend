@@ -100,7 +100,8 @@ export const Schemas = {
             IsDeleted: Joi.boolean().optional(),
             rentalStartDate: Joi.date().optional(),
             rentalEndDate: Joi.date().optional(),
-            imageUrl: Joi.string().optional()
+            //imageUrl: Joi.string().optional()
+            imageUrl: Joi.string().allow(null, '').optional()
         }),
         update: Joi.object<ILibro>({
             isbn: Joi.string().optional(),
