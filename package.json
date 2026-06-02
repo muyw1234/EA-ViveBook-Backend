@@ -12,6 +12,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@mj-kiwi/matomo-client": "^2.0.0",
         "@react-native-async-storage/async-storage": "2.2.0",
         "@types/axios": "^0.14.4",
         "@types/bcryptjs": "^3.0.0",
