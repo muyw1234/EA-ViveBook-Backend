@@ -212,5 +212,13 @@ export const Schemas = {
             puntuacion: Joi.number().min(1).max(5).required(),
             comentario: Joi.string().optional().allow('')
         })
+    },
+    reserva: {
+        create: Joi.object({
+            libroId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required()
+        }),
+        aceptar: Joi.object({
+            dias: Joi.number().min(1).optional()
+        })
     }
 };

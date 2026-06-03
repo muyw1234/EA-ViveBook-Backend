@@ -131,10 +131,20 @@ async function searchLibroByTitle(term: string, page = 1, limit = 10, excludeOwn
 
 export async function buyLibro(libroId: string, userId: string): Promise<boolean> {
     try {
+        const libro = await Libro.findById(libroId);
+        if (!libro) {
+            Logging.error('Book not found in buyLibro');
+            return false;
+        }
+        if (libro.isReserved) {
+            Logging.error('Book is reserved and cannot be bought');
+            return false;
+        }
+
         // Mark book as deleted (sold)
         const updatedLibro = await Libro.findByIdAndUpdate(libroId, { IsDeleted: true });
         if (!updatedLibro) {
-            Logging.error('Book not found in buyLibro');
+            Logging.error('Book could not be updated in buyLibro');
             return false;
         }
 
@@ -157,10 +167,20 @@ export async function buyLibro(libroId: string, userId: string): Promise<boolean
 
 export async function rentLibro(libroId: string, userId: string): Promise<boolean> {
     try {
+        const libro = await Libro.findById(libroId);
+        if (!libro) {
+            Logging.error('Book not found in rentLibro');
+            return false;
+        }
+        if (libro.isReserved) {
+            Logging.error('Book is reserved and cannot be rented');
+            return false;
+        }
+
         // Mark book as deleted (unavailable)
         const updatedLibro = await Libro.findByIdAndUpdate(libroId, { IsDeleted: true });
         if (!updatedLibro) {
-            Logging.error('Book not found in rentLibro');
+            Logging.error('Book could not be updated in rentLibro');
             return false;
         }
 
