@@ -18,6 +18,7 @@ import postRoutes from './routes/Post';
 import valoracionRoutes from './routes/Valoracion';
 import imageRoutes from './routes/Image';
 import retosRoutes from './routes/Retos';
+import reservaRoutes from './routes/Reserva';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
@@ -59,6 +60,7 @@ const StartServer = () => {
     router.use('/valoraciones', valoracionRoutes);
     router.use('/image', imageRoutes);
     router.use('/retos', retosRoutes);
+    router.use('/reservas', reservaRoutes);
 
     router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 
@@ -80,6 +82,7 @@ const StartServer = () => {
         }
     });
 
+    router.set('io', io);
     socketHandler(io);
 
     httpServer.listen(config.server.port, () => {

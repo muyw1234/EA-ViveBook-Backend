@@ -16,6 +16,9 @@ export interface ILibro {
     rentalStartDate?: Date;
     rentalEndDate?: Date;
     imageUrl?: string;
+    isReserved?: boolean;
+    reservedBy?: mongoose.Types.ObjectId | string;
+    reservationExpiry?: Date;
 }
 
 export interface ILibroModel extends ILibro, Document {}
@@ -34,7 +37,10 @@ const LibroSchema: Schema = new Schema(
         IsDeleted: { type: Boolean, default: false },
         rentalStartDate: { type: Date, required: false },
         rentalEndDate: { type: Date, required: false },
-        imageUrl: { type: String, required: false }
+        imageUrl: { type: String, required: false },
+        isReserved: { type: Boolean, default: false },
+        reservedBy: { type: Schema.Types.ObjectId, ref: 'Usuario', required: false },
+        reservationExpiry: { type: Date, required: false }
     },
     {
         timestamps: true,
