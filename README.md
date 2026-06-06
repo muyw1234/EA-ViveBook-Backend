@@ -1,42 +1,57 @@
-# Minimo 2
+# 📚 Plataforma de Libros y Eventos (API REST)
 
-## Ejercicio: Medir metrica con Matomo.
+¡Amo la lectura y los eventos literarios! Este proyecto es el **Backend (API REST)** para una plataforma diseñada para que los amantes de los libros puedan comprar, alquilar, y asistir a eventos en
+sus librerías favoritas. Además, incluye un sistema de chat para que compradores y vendedores puedan hablar entre sí.
 
-La ruta implementada es `/matomo` y las subrutas pueden ser `/version` o `/summary`. Me ha costado.
+Este proyecto está construido con **Node.js, Express, TypeScript y MongoDB (Mongoose)**.
 
-Pideme los secrets si necesitais hacer los tests.
+---
 
-Pero tambien se puede desplegar localmente con docker. El archivo docker compose seria
+## 🌟 Funcionalidades Principales
 
-```yaml
-services:
-    matomo-db:
-        image: mysql:8.0
-        container_name: matomo-db
-        restart: always
-        environment:
-            MYSQL_ROOT_PASSWORD: root
-            MYSQL_DATABASE: matomo
-            MYSQL_USER: matomo
-            MYSQL_PASSWORD: matomo
-        volumes:
-            - db_data:/var/lib/mysql
-    matomo:
-        image: matomo
-        container_name: matomo
-        restart: always
-        ports:
-            - '9010:80'
-        depends_on:
-            - matomo-db
-volumes:
-    db_data:
+Hemos modelado 5 entidades principales en nuestra base de datos. Cada una tiene sus rutas para crear, leer, actualizar y borrar información (CRUD):
+
+1. **🧑‍💻 Usuarios (`/usuarios`)**: Personas registradas en la plataforma.
+2. **🏪 Librerías (`/librerias`)**: Los espacios físicos que organizan eventos y sirven de punto de intercambio de libros.
+3. **📖 Libros (`/libros`)**: Obras puestas en subida por los usuarios para _"VENTA"_ o _"ALQUILER"_.
+4. **🎟️ Eventos (`/eventos`)**: Actividades, charlas o clubes de lectura organizados por una librería.
+5. **💬 Chats & Mensajes (`/chats` y `/mensajes`)**: Un sistema para que dos usuarios abran un canal de comunicación para hablar (por ejemplo, sobre un libro que quieren comprar).
+
+---
+
+## 🚀 ¿Cómo arrancar el proyecto?
+
+Para ejecutar esta API en tu ordenador, asegúrate de tener **Node.js** y **MongoDB** instalados y funcionando localmente.
+
+### 1. Instalar dependencias
+
+Abre la terminal en la carpeta del proyecto y descarga todo lo necesario:
+
+```bash
+npm install
 ```
 
-## Referencias usadas
+### 2. Arrancar el servidor
 
-- [Repositorio del paquete instalado](https://github.com/mj-kiwi/matomo-js)
-- [Documentacion oficial de matomo](https://developer.matomo.org/guides/integrate-introduction)
-- [OAuth2 de matomo](https://developer.matomo.org/guides/oauth2/setup)
-- [Reporting api](https://developer.matomo.org/api-reference/reporting-api)
-- [What is matomo and how to set up matomo locally](https://medium.com/@svsh227/what-is-matomo-and-how-to-set-up-matomo-locally-3d92fcb8e4b4)
+Compilamos el código de TypeScript y levantamos la API:
+
+```bash
+npm run go
+```
+
+_(Si todo va bien, verás en la consola que Mongo se ha conectado y el servidor corre en el puerto 1337)._
+
+### 3. Ver la Documentación en Swagger 👀
+
+¡No hace falta probar los Endpoints a ciegas con Postman! He preparado una interfaz gráfica para probar la API. Abre tu navegador una vez el servidor esté encendido y visita: 👉
+**[http://localhost:1337/swagger](http://localhost:1337/swagger)**
+
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+- **Node.js & Express**: Para el servidor HTTP.
+- **TypeScript**: Para que nuestro código sea más tipado y seguro.
+- **Mongoose**: Para conectarnos a la base de datos de MongoDB.
+- **Joi**: Para validar los datos (que no nos envíen campos sueltos o emails falsos).
+- **Swagger**: Para la documentación visual de las rutas.
