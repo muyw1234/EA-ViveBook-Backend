@@ -30,7 +30,11 @@ export const Schemas = {
         create: Joi.object<IUsuario>({
             name: Joi.string().required(),
             email: Joi.string().email().required(),
-            password: Joi.string().min(6).required(),
+            password: Joi.string().min(6).optional(),
+            authProvider: Joi.string().valid('local', 'google', 'apple').optional(),
+            googleId: Joi.string().optional(),
+            appleId: Joi.string().optional(),
+            avatar: Joi.string().optional(),
             rol: Joi.string().valid('Admin', 'User').default('User'),
             libros: Joi.array().items(Joi.string().optional()),
             favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
@@ -51,6 +55,10 @@ export const Schemas = {
             name: Joi.string().optional(),
             email: Joi.string().email().optional(),
             password: Joi.string().min(6).optional(),
+            authProvider: Joi.string().valid('local', 'google', 'apple').optional(),
+            googleId: Joi.string().optional(),
+            appleId: Joi.string().optional(),
+            avatar: Joi.string().optional(),
             rol: Joi.string().valid('Admin', 'User').optional(),
             libros: Joi.array().items(Joi.string().optional()),
             favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
@@ -201,6 +209,11 @@ export const Schemas = {
     signIn: Joi.object<IUsuario>({
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required()
+    }),
+    socialLogin: Joi.object({
+        provider: Joi.string().valid('google', 'apple').required(),
+        idToken: Joi.string().required(),
+        name: Joi.string().optional()
     }),
     valoracion: {
         create: Joi.object({

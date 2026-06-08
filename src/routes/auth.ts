@@ -51,6 +51,36 @@ router.post('/signin', ValidateJoi(Schemas.signIn), Auth.signin);
 
 /**
  * @openapi
+ * /auth/social-login:
+ *   post:
+ *     summary: Inicia sesión o registra mediante Google/Apple
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *               - idToken
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 example: google
+ *               idToken:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso, devuelve token
+ */
+router.post('/social-login', ValidateJoi(Schemas.socialLogin), Auth.socialLogin);
+
+/**
+ * @openapi
  * /auth/signup:
  *   post:
  *     summary: Registro de usuario

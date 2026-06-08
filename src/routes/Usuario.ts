@@ -241,6 +241,10 @@ router.get('/search', controller.searchUsuarioByName);
  *       404:
  *         description: Usuario no encontrado
  */
+router.get('/favoritos', TokenValidation, controller.getFavoritos);
+router.get('/favoritos/:libroId', TokenValidation, controller.checkFavorito);
+router.put('/favoritos/:libroId', TokenValidation, controller.toggleFavorito);
+
 router.get('/:usuarioId', TokenValidation, controller.getUsuario);
 
 /**

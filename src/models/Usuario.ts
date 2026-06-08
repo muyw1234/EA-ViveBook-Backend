@@ -4,7 +4,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IUsuario {
     name: string;
     email: string;
-    password: string;
+    password?: string;
+    authProvider?: 'local' | 'google' | 'apple';
+    googleId?: string;
+    appleId?: string;
+    avatar?: string;
     rol: 'Admin' | 'User';
     libros: mongoose.Types.ObjectId[] | string[]; // Es un array porque claro, un usuario puede tener mas de un libro
     boughtLibros: mongoose.Types.ObjectId[] | string[];
@@ -13,6 +17,7 @@ export interface IUsuario {
     favoriteBooks?: string[];
     favoriteCategories?: string[];
     followingUsers?: mongoose.Types.ObjectId[] | string[];
+    favoritos: mongoose.Types.ObjectId[] | string[];
     description?: string;
     IsDeleted?: boolean;
     hasSeenTutorial?: boolean;
@@ -26,7 +31,11 @@ const UsuarioSchema: Schema = new Schema(
     {
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
+        password: { type: String, required: function(this: any) { return this.authProvider === 'local' || !this.authProvider; } },
+        authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
+        googleId: { type: String, required: false },
+        appleId: { type: String, required: false },
+        avatar: { type: String, required: false },
         rol: { type: String, enum: ['Admin', 'User'], default: 'User' },
         libros: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
         boughtLibros: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
@@ -35,6 +44,7 @@ const UsuarioSchema: Schema = new Schema(
         favoriteBooks: [{ type: String, required: false }],
         favoriteCategories: [{ type: String, required: false }],
         followingUsers: [{ type: Schema.Types.ObjectId, required: false, ref: 'Usuario' }],
+        favoritos: { type: [{ type: Schema.Types.ObjectId, ref: 'Libro' }], default: [] },
         description: { type: String, required: false, default: '' },
         IsDeleted: { type: Boolean, default: false },
         hasSeenTutorial: { type: Boolean, default: false }
@@ -67,6 +77,7 @@ UsuarioSchema.methods.encryptPassword = async function (password: string): Promi
 // });
 
 UsuarioSchema.methods.validatePassword = async function (password: string): Promise<boolean> {
+    if (!this.password) return false;
     return await bcrypt.compare(password, this.password);
 };
 

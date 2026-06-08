@@ -75,10 +75,38 @@ const restoreUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> 
     return await Usuario.findByIdAndUpdate(usuarioId, { IsDeleted: false }, { new: true });
 };
 
+const getFavoritos = async (usuarioId: string): Promise<IUsuarioModel | null> => {
+    return await Usuario.findById(usuarioId).populate('favoritos');
+};
+
+const toggleFavorito = async (usuarioId: string, libroId: string): Promise<IUsuarioModel | null> => {
+    const usuario = await Usuario.findById(usuarioId);
+    if (!usuario) return null;
+
+    if (!usuario.favoritos) {
+        usuario.favoritos = [];
+    }
+
+    const index = usuario.favoritos.findIndex((id: any) => id.toString() === libroId);
+    if (index === -1) {
+        usuario.favoritos.push(libroId as any);
+    } else {
+        usuario.favoritos.splice(index, 1);
+    }
+
+    return await usuario.save();
+};
+
+const isFavorito = async (usuarioId: string, libroId: string): Promise<boolean> => {
+    const usuario = await Usuario.findById(usuarioId);
+    if (!usuario || !usuario.favoritos) return false;
+    return usuario.favoritos.some((id: any) => id.toString() === libroId);
+};
+
 async function searchUsuarioByName(term: string, page = 1, limit = 10) {
     return await Usuario.find({ $text: { $search: term }, IsDeleted: false })
         .limit(limit)
         .skip((page - 1) * limit);
 }
 
-export default { createUsuario, getUsuario, getFollowers, getUsuarioByEmail, getAllUsuarios, getAllUsuarios_NOT_Deleted, updateUsuario, deleteUsuario, permanentDeleteUsuario, restoreUsuario, searchUsuarioByName };
+export default { createUsuario, getUsuario, getFollowers, getUsuarioByEmail, getAllUsuarios, getAllUsuarios_NOT_Deleted, updateUsuario, deleteUsuario, permanentDeleteUsuario, restoreUsuario, searchUsuarioByName, getFavoritos, toggleFavorito, isFavorito };
