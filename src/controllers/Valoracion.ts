@@ -52,7 +52,23 @@ const getValoracionesReceived = async (req: Request, res: Response, next: NextFu
     }
 };
 
+const getValoracionesSent = async (req: Request, res: Response, next: NextFunction) => {
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+        const valoraciones = await ValoracionService.getValoracionesSent(usuarioId);
+        return res.status(200).json(valoraciones);
+    } catch (error: any) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
 export default {
     createValoracion,
-    getValoracionesReceived
+    getValoracionesReceived,
+    getValoracionesSent
 };

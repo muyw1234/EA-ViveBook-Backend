@@ -44,7 +44,8 @@ export const Schemas = {
                 )
                 .optional(),
             description: Joi.string().optional().allow(''),
-            IsDeleted: Joi.boolean().optional()
+            IsDeleted: Joi.boolean().optional(),
+            hasSeenTutorial: Joi.boolean().optional()
         }),
         update: Joi.object<IUsuario>({
             name: Joi.string().optional(),
@@ -63,7 +64,8 @@ export const Schemas = {
                 )
                 .optional(),
             description: Joi.string().optional().allow(''),
-            IsDeleted: Joi.boolean().optional()
+            IsDeleted: Joi.boolean().optional(),
+            hasSeenTutorial: Joi.boolean().optional()
         })
     },
     Autor: {
@@ -208,9 +210,10 @@ export const Schemas = {
             libro: Joi.string()
                 .regex(/^[0-9a-fA-F]{24}$/)
                 .required(),
-            tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER').required(),
+            tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER', 'RESERVA').required(),
             puntuacion: Joi.number().min(1).max(5).required(),
-            comentario: Joi.string().optional().allow('')
+            comentario: Joi.string().optional().allow(''),
+            reservationId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional()
         })
     },
     reserva: {
@@ -220,5 +223,12 @@ export const Schemas = {
         aceptar: Joi.object({
             dias: Joi.number().min(1).optional()
         })
+    },
+    messageRequest: {
+        create: Joi.object({
+            bookId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
+            initialMessage: Joi.string().optional().allow('')
+        })
     }
 };
+

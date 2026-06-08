@@ -1,5 +1,6 @@
 import Reto, { TipoReto } from '../models/Reto';
 import ProgresoReto from '../models/ProgresoReto';
+import { getPagination } from './Pagination';
 
 const retosIniciales: {
   title: string;
@@ -170,13 +171,17 @@ export const actualizarProgresoRetos = async (
   }
 };
 
-export const obtenerMisRetos = async (usuarioId: string) => {
-  const retos = await Reto.find({
-    activo: true
-  }).sort({
-    type: 1,
-    objetivo: 1
-  });
+export const obtenerMisRetos = async (usuarioId: string, page: number = 1, limit: number = 10) => {
+  const pagination = getPagination(page, limit);
+  const [retos, total] = await Promise.all([
+    Reto.find({
+      activo: true
+    }).sort({
+      type: 1,
+      objetivo: 1
+    }).skip(pagination.skip).limit(pagination.limit),
+    Reto.countDocuments({ activo: true })
+  ]);
 
   const resultado = [];
 
@@ -214,5 +219,13 @@ export const obtenerMisRetos = async (usuarioId: string) => {
     });
   }
 
-  return resultado;
+  return {
+    data: resultado,
+    pagination: {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(total / pagination.limit)
+    }
+  };
 };

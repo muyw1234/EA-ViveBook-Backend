@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Mensaje from '../models/Mensaje';
 import Reserva from '../models/Reserva';
+import Chat from '../models/Chat';
 import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 
@@ -99,9 +100,23 @@ const getUnreadCount = async (req: Request, res: Response, next: NextFunction) =
             deletedBy: { $ne: userId }
         });
 
+        // Get all chats of the user (excluding global chat)
+        const userChats = await Chat.find({
+            participants: userId,
+            _id: { $ne: '000000000000000000000001' }
+        }).select('_id');
+        const userChatIds = userChats.map(c => c._id);
+
+        const unreadPrivateChatsCount = await Mensaje.countDocuments({
+            chat: { $in: userChatIds },
+            sender: { $ne: userId },
+            readBy: { $ne: userId },
+            deletedBy: { $ne: userId }
+        });
+
         return sendSuccess(res, {
-            total: unreadGeneralCount + unreadReservationCount,
-            general: unreadGeneralCount,
+            total: unreadGeneralCount + unreadReservationCount + unreadPrivateChatsCount,
+            general: unreadGeneralCount + unreadPrivateChatsCount,
             reservation: unreadReservationCount
         }, 'Conteo de no leídos obtenido con éxito');
     } catch (error) {

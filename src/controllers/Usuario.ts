@@ -6,6 +6,7 @@ import { getPaginationParams } from './Pagination';
 import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
+import { getUserLevel } from '../services/Niveles';
 
 const createUsuario = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -30,7 +31,13 @@ const getUsuario = async (req: Request, res: Response, next: NextFunction) => {
             return sendError(res, 'El usuario solicitado no existe', 'Not Found', 404);
         }
 
-        return sendSuccess(res, usuario, 'Usuario obtenido con éxito');
+        const levelData = await getUserLevel(usuarioId);
+        const profileData = {
+            ...usuario.toObject(),
+            ...levelData
+        };
+
+        return sendSuccess(res, profileData, 'Usuario obtenido con éxito');
     } catch (error) {
         return sendError(res, error, 'Error al procesar la búsqueda del usuario');
     }

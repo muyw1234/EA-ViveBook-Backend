@@ -5,6 +5,8 @@ import Libro from '../models/Libro';
 import Mensaje from '../models/Mensaje';
 import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
+import { getPaginationParams } from './Pagination';
+import { getPagination } from '../services/Pagination';
 
 const solicitarReserva = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -233,16 +235,35 @@ const rechazarReserva = async (req: Request, res: Response, next: NextFunction) 
 
 const getReservasSolicitadas = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const { page, limit } = getPaginationParams(req);
+        const pagination = getPagination(page, limit);
         const userId = req.userId;
         if (!userId) {
             return res.status(401).json({ message: 'No autorizado' });
         }
 
-        const reservas = await Reserva.find({ usuarioSolicitante: userId, deletedBy: { $ne: userId } })
-            .populate('libro')
-            .populate('propietario', 'name email');
+        const query = { usuarioSolicitante: userId, deletedBy: { $ne: userId } };
+        const [data, total] = await Promise.all([
+            Reserva.find(query)
+                .sort({ _id: -1 })
+                .skip(pagination.skip)
+                .limit(pagination.limit)
+                .populate('libro')
+                .populate('propietario', 'name email'),
+            Reserva.countDocuments(query)
+        ]);
 
-        return sendSuccess(res, reservas, 'Reservas solicitadas obtenidas con éxito');
+        const result = {
+            data,
+            pagination: {
+                total,
+                page: pagination.page,
+                limit: pagination.limit,
+                totalPages: Math.ceil(total / pagination.limit)
+            }
+        };
+
+        return sendSuccess(res, result, 'Reservas solicitadas obtenidas con éxito');
     } catch (error) {
         Logging.error(`Error in getReservasSolicitadas: ${error}`);
         return sendError(res, error, 'Error al obtener las reservas solicitadas');
@@ -251,16 +272,35 @@ const getReservasSolicitadas = async (req: Request, res: Response, next: NextFun
 
 const getReservasRecibidas = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const { page, limit } = getPaginationParams(req);
+        const pagination = getPagination(page, limit);
         const userId = req.userId;
         if (!userId) {
             return res.status(401).json({ message: 'No autorizado' });
         }
 
-        const reservas = await Reserva.find({ propietario: userId, deletedBy: { $ne: userId } })
-            .populate('libro')
-            .populate('usuarioSolicitante', 'name email');
+        const query = { propietario: userId, deletedBy: { $ne: userId } };
+        const [data, total] = await Promise.all([
+            Reserva.find(query)
+                .sort({ _id: -1 })
+                .skip(pagination.skip)
+                .limit(pagination.limit)
+                .populate('libro')
+                .populate('usuarioSolicitante', 'name email'),
+            Reserva.countDocuments(query)
+        ]);
 
-        return sendSuccess(res, reservas, 'Solicitudes recibidas obtenidas con éxito');
+        const result = {
+            data,
+            pagination: {
+                total,
+                page: pagination.page,
+                limit: pagination.limit,
+                totalPages: Math.ceil(total / pagination.limit)
+            }
+        };
+
+        return sendSuccess(res, result, 'Solicitudes recibidas obtenidas con éxito');
     } catch (error) {
         Logging.error(`Error in getReservasRecibidas: ${error}`);
         return sendError(res, error, 'Error al obtener las solicitudes de reserva recibidas');

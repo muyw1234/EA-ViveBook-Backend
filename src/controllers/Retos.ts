@@ -1,21 +1,36 @@
 import { NextFunction, Request, Response } from 'express';
 import { obtenerMisRetos } from '../services/Retos';
 import Reto from '../models/Reto';
+import { getPaginationParams } from './Pagination';
+import { getPagination } from '../services/Pagination';
+import { sendSuccess, sendError } from '../library/ApiResponse';
 
 const getRetos = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const retos = await Reto.find({
-            activo: true
-        }).sort({
-            type: 1,
-            objetivo: 1
-        });
+        const { page, limit } = getPaginationParams(req);
+        const pagination = getPagination(page, limit);
 
-        return res.status(200).json({
-            retos
-        });
+        const [retos, total] = await Promise.all([
+            Reto.find({
+                activo: true
+            }).sort({
+                type: 1,
+                objetivo: 1
+            }).skip(pagination.skip).limit(pagination.limit),
+            Reto.countDocuments({ activo: true })
+        ]);
+
+        return sendSuccess(res, {
+            data: retos,
+            pagination: {
+                total,
+                page: pagination.page,
+                limit: pagination.limit,
+                totalPages: Math.ceil(total / pagination.limit)
+            }
+        }, 'Retos obtenidos con éxito');
     } catch (error) {
-        return next(error);
+        return sendError(res, error, 'Error al obtener los retos');
     }
 };
 
@@ -24,18 +39,15 @@ const getMisRetos = async (req: Request, res: Response, next: NextFunction) => {
         const usuarioId = req.userId;
 
         if (!usuarioId) {
-            return res.status(401).json({
-                message: 'Usuario no autenticado'
-            });
+            return sendError(res, 'Usuario no autenticado', 'Unauthorized', 401);
         }
 
-        const retos = await obtenerMisRetos(usuarioId);
+        const { page, limit } = getPaginationParams(req);
+        const paginatedRetos = await obtenerMisRetos(usuarioId, page, limit);
 
-        return res.status(200).json({
-            retos
-        });
+        return sendSuccess(res, paginatedRetos, 'Mis retos obtenidos con éxito');
     } catch (error) {
-        return next(error);
+        return sendError(res, error, 'Error al obtener mis retos');
     }
 };
 
