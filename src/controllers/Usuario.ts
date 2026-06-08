@@ -185,6 +185,67 @@ async function searchUsuarioByName(req: Request, res: Response, next: NextFuncti
     }
 }
 
+const toggleFavorito = async (req: Request, res: Response, next: NextFunction) => {
+    const { libroId } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(401).json({ message: 'No autenticado' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(libroId)) {
+        return res.status(400).json({ message: 'Formato de ID de libro inválido' });
+    }
+
+    try {
+        const result = await UsuarioService.toggleFavorito(usuarioId, libroId);
+        if (!result) {
+            return sendError(res, 'No se pudo actualizar favoritos', 'Not Found', 404);
+        }
+        return sendSuccess(res, result.favoritos, 'Favoritos actualizados con éxito');
+    } catch (error) {
+        return sendError(res, error, 'Error al actualizar favoritos');
+    }
+};
+
+const getFavoritos = async (req: Request, res: Response, next: NextFunction) => {
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(401).json({ message: 'No autenticado' });
+    }
+
+    try {
+        const usuario = await UsuarioService.getFavoritos(usuarioId);
+        if (!usuario) {
+            return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+        }
+        return sendSuccess(res, usuario.favoritos, 'Libros favoritos recuperados con éxito');
+    } catch (error) {
+        return sendError(res, error, 'Error al recuperar libros favoritos');
+    }
+};
+
+const checkFavorito = async (req: Request, res: Response, next: NextFunction) => {
+    const { libroId } = req.params;
+    const usuarioId = req.userId;
+
+    if (!usuarioId) {
+        return res.status(401).json({ message: 'No autenticado' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(libroId)) {
+        return res.status(400).json({ message: 'Formato de ID de libro inválido' });
+    }
+
+    try {
+        const isFavorite = await UsuarioService.isFavorito(usuarioId, libroId);
+        return sendSuccess(res, { isFavorite }, 'Comprobación de favorito exitosa');
+    } catch (error) {
+        return sendError(res, error, 'Error al comprobar favorito');
+    }
+};
+
 export default {
     createUsuario,
     getUsuario,
@@ -195,5 +256,8 @@ export default {
     deleteUsuario,
     permanentDeleteUsuario,
     restoreUsuario,
-    searchUsuarioByName
+    searchUsuarioByName,
+    toggleFavorito,
+    getFavoritos,
+    checkFavorito
 };
