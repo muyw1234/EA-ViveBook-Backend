@@ -15,6 +15,7 @@ export interface IUsuario {
     followingUsers?: mongoose.Types.ObjectId[] | string[];
     description?: string;
     IsDeleted?: boolean;
+    hasSeenTutorial?: boolean;
     encryptPassword(password: string): Promise<string>;
     validatePassword(password: string): Promise<boolean>;
 }
@@ -35,7 +36,8 @@ const UsuarioSchema: Schema = new Schema(
         favoriteCategories: [{ type: String, required: false }],
         followingUsers: [{ type: Schema.Types.ObjectId, required: false, ref: 'Usuario' }],
         description: { type: String, required: false, default: '' },
-        IsDeleted: { type: Boolean, default: false }
+        IsDeleted: { type: Boolean, default: false },
+        hasSeenTutorial: { type: Boolean, default: false }
     },
     {
         timestamps: true,

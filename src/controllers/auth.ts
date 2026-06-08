@@ -7,6 +7,7 @@ import { config } from '../config/config';
 import { IPayload } from '../middleware/verifyToken';
 import Logging from '../library/Logging';
 import { sendError, sendSuccess } from '../library/ApiResponse';
+import { getUserLevel } from '../services/Niveles';
 
 //#region Autenticacion
 
@@ -87,7 +88,13 @@ export const profile = async (req: Request, res: Response, next: NextFunction) =
         const librosCount = Array.isArray(usuario.libros) ? usuario.libros.length : 0;
         Logging.info(`Profile for ${usuario.email} requested. Books count: ${librosCount}`);
 
-        return sendSuccess(res, usuario, 'Perfil de usuario obtenido con éxito', 200);
+        const levelData = await getUserLevel(req.userId);
+        const profileData = {
+            ...usuario.toObject(),
+            ...levelData
+        };
+
+        return sendSuccess(res, profileData, 'Perfil de usuario obtenido con éxito', 200);
     } catch (error: any) {
         Logging.error(`Error in profile controller: ${error}`);
         return sendError(res, error, 'Error al obtener el perfil del usuario', 500);

@@ -19,6 +19,7 @@ import valoracionRoutes from './routes/Valoracion';
 import imageRoutes from './routes/Image';
 import retosRoutes from './routes/Retos';
 import reservaRoutes from './routes/Reserva';
+import messageRequestRoutes from './routes/MessageRequest';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
@@ -61,6 +62,7 @@ const StartServer = () => {
     router.use('/image', imageRoutes);
     router.use('/retos', retosRoutes);
     router.use('/reservas', reservaRoutes);
+    router.use('/message-requests', messageRequestRoutes);
 
     router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 
