@@ -9,7 +9,10 @@
     "build": "tsc",
     "postinstall": "tsc",
     "lint": "eslint",
+    "lint:quiet": "eslint --quiet",
     "lint:fix": "eslint --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "prepare": "husky"
   },
   "author": "",
