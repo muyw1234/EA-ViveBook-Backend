@@ -245,8 +245,6 @@ router.get('/favoritos', TokenValidation, controller.getFavoritos);
 router.get('/favoritos/:libroId', TokenValidation, controller.checkFavorito);
 router.put('/favoritos/:libroId', TokenValidation, controller.toggleFavorito);
 
-router.get('/:usuarioId', TokenValidation, controller.getUsuario);
-
 /**
  * @openapi
  * /usuarios/{usuarioId}/followers:
@@ -269,6 +267,8 @@ router.get('/:usuarioId', TokenValidation, controller.getUsuario);
  *         description: Usuario no encontrado
  */
 router.get('/:usuarioId/followers', TokenValidation, controller.getFollowers);
+
+router.get('/:usuarioId', TokenValidation, controller.getUsuario);
 
 /**
  * @openapi
