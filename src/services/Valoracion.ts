@@ -5,51 +5,38 @@ import Libro from '../models/Libro';
 import Logging from '../library/Logging';
 
 const createValoracion = async (data: Partial<IValoracion>): Promise<IValoracionModel | null> => {
-    const { usuarioAutor, usuarioValorado, libro, tipoOperacion } = data;
+    const { usuarioAutor, usuarioValorado, libro, tipoOperacion, reservationId } = data;
 
     // 1. Check self-rating
     if (usuarioAutor === usuarioValorado) {
         throw new Error('No puedes valorarte a ti mismo');
     }
 
-    // 2. Validate transaction
+    // 2. Validate user exists
     const user = await Usuario.findById(usuarioAutor);
     if (!user) {
         Logging.error(`Valoracion error: Autor ${usuarioAutor} no encontrado`);
         throw new Error('Usuario autor no encontrado');
     }
 
-    /*
-    const opType = tipoOperacion?.toUpperCase();
-    const bookList = opType === 'VENTA' ? user.boughtLibros : user.rentedLibros;
-    const bookListStrings = bookList.map((id: any) => id.toString());
-    
-    if (!bookListStrings.includes(libro?.toString() || '')) {
-        Logging.error(`Valoracion error: Libro ${libro} no encontrado en la lista de ${opType} del usuario ${usuarioAutor}`);
-        throw new Error(`No has ${opType === 'VENTA' ? 'comprado' : 'alquilado'} este libro`);
+    // 3. Check for existing rating for the transition
+    let existing = null;
+    if (reservationId) {
+        existing = await Valoracion.findOne({
+            usuarioAutor: new mongoose.Types.ObjectId(usuarioAutor),
+            reservationId: new mongoose.Types.ObjectId(reservationId as string)
+        });
+    } else {
+        existing = await Valoracion.findOne({
+            usuarioAutor: new mongoose.Types.ObjectId(usuarioAutor),
+            libro: new mongoose.Types.ObjectId(libro as string),
+            tipoOperacion: tipoOperacion
+        });
     }
 
-    // 3. Verify owner
-    const book = await Libro.findById(libro);
-    if (!book) {
-        Logging.error(`Valoracion error: Libro ${libro} no encontrado`);
-        throw new Error('Libro no encontrado');
-    }
-    if (book.owner?.toString() !== usuarioValorado?.toString()) {
-        Logging.error(`Valoracion error: El propietario del libro ${book.owner} no coincide con el valorado ${usuarioValorado}`);
-        throw new Error('El usuario valorado no es el propietario del libro');
-    }
-    */
-
-    // 4. Check for existing rating
-    const existing = await Valoracion.findOne({ 
-        usuarioAutor: new mongoose.Types.ObjectId(usuarioAutor), 
-        usuarioValorado: new mongoose.Types.ObjectId(usuarioValorado), 
-        libro: new mongoose.Types.ObjectId(libro) 
-    });
     if (existing) {
         Logging.error(`Valoracion error: Ya existe una valoración para esta operación`);
-        throw new Error('Ya has valorado a este usuario por este libro');
+        throw new Error('Ya has valorado esta transacción');
     }
 
     const valoracion = new Valoracion({
@@ -69,6 +56,14 @@ const getValoracionesReceived = async (usuarioId: string): Promise<IValoracionMo
         .populate('usuarioAutor', 'name')
         .populate('libro', 'title')
         .sort({ createdAt: -1 });
+};
+
+const getValoracionesSent = async (usuarioId: string): Promise<IValoracionModel[]> => {
+    if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+        Logging.warning(`Invalid usuarioId for sent valoraciones: ${usuarioId}`);
+        return [];
+    }
+    return await Valoracion.find({ usuarioAutor: new mongoose.Types.ObjectId(usuarioId) });
 };
 
 const getRatingStats = async (usuarioId: string) => {
@@ -96,4 +91,9 @@ const getRatingStats = async (usuarioId: string) => {
     };
 };
 
-export default { createValoracion, getValoracionesReceived, getRatingStats };
+export default { 
+    createValoracion, 
+    getValoracionesReceived, 
+    getValoracionesSent,
+    getRatingStats 
+};

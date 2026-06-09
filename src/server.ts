@@ -15,41 +15,42 @@ import chatRoutes from './routes/Chat';
 import mensajeRoutes from './routes/Mensaje';
 import authRoutes from './routes/auth';
 import postRoutes from './routes/Post';
+import matomoRoute from './routes/Matomo';
 import valoracionRoutes from './routes/Valoracion';
 import imageRoutes from './routes/Image';
+import retosRoutes from './routes/Retos';
+import reservaRoutes from './routes/Reserva';
+import messageRequestRoutes from './routes/MessageRequest';
 import recomendacionRoutes from './routes/Recomendacion';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
 import { ensureGlobalChat } from './library/ChatUtils';
+import { inicializarRetos } from './services/Retos';
 
 const router = express();
 
-/** Connect to Mongo */
 mongoose
     .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
-    .then(() => {
+    .then(async () => {
         Logging.info('Mongo connected successfully.');
+        await inicializarRetos();
+        Logging.info('Retos inicializados correctamente.');
         ensureGlobalChat();
         StartServer();
     })
     .catch((error) => Logging.error(error));
 
-/** Only Start Server if Mongoose Connects */
 const StartServer = () => {
-    /** Log the request */
     router.use(pinoHttp({ logger: Logging.logger }));
 
     router.use(express.urlencoded({ extended: true }));
     router.use(express.json());
 
-    /** Rules of our API */
     router.use(cors());
 
-    /** Swagger */
     router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-    /** Routes */
     router.use('/usuarios', usuarioRoutes);
     router.use('/librerias', libreriaRoutes);
     router.use('/libros', libroRoutes);
@@ -61,12 +62,14 @@ const StartServer = () => {
     router.use('/posts', postRoutes);
     router.use('/valoraciones', valoracionRoutes);
     router.use('/image', imageRoutes);
+    router.use('/matomo', matomoRoute);
+    router.use('/retos', retosRoutes);
+    router.use('/reservas', reservaRoutes);
+    router.use('/message-requests', messageRequestRoutes);
     router.use('/recomendaciones', recomendacionRoutes);
 
-    /** Healthcheck */
     router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 
-    /** Error handling */
     router.use((req, res, next) => {
         const error = new Error('Not found');
 
@@ -85,6 +88,7 @@ const StartServer = () => {
         }
     });
 
+    router.set('io', io);
     socketHandler(io);
 
     httpServer.listen(config.server.port, () => {

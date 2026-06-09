@@ -14,6 +14,8 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || 'Pon el tuyo';
 const CLOUDINARY_SECRET = process.env.CLOUDINARY_SECRET || 'Pon el turo';
 const CLOUDINARY_NAME = process.env.CLOUDINARY_NAME || 'Pon el tuyo';
+const MATOMO_INSTANCE = process.env.MATOMO_INSTANCE || 'https://your-matomo-instance.com';
+const MATOMO_API = process.env.MATOMO_API || 'your-api-key';
 const WEAVIATE_HOST = process.env.WEAVIATE_HOST || 'localhost';
 const WEAVIATE_PORT = process.env.WEAVIATE_PORT ? Number(process.env.WEAVIATE_PORT) : 8081;
 const WEAVIATE_SCHEME = process.env.WEAVIATE_SCHEME || 'http';
@@ -40,6 +42,10 @@ export const config = {
         apiKey: CLOUDINARY_API_KEY,
         secret: CLOUDINARY_SECRET,
         name: CLOUDINARY_NAME
+    },
+    matomo: {
+        instance: MATOMO_INSTANCE,
+        api: MATOMO_API
     },
     weaviate: {
         host: WEAVIATE_HOST,

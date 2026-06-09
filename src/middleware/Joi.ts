@@ -30,7 +30,11 @@ export const Schemas = {
         create: Joi.object<IUsuario>({
             name: Joi.string().required(),
             email: Joi.string().email().required(),
-            password: Joi.string().min(6).required(),
+            password: Joi.string().min(6).optional(),
+            authProvider: Joi.string().valid('local', 'google', 'apple').optional(),
+            googleId: Joi.string().optional(),
+            appleId: Joi.string().optional(),
+            avatar: Joi.string().optional(),
             rol: Joi.string().valid('Admin', 'User').default('User'),
             libros: Joi.array().items(Joi.string().optional()),
             favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
@@ -44,12 +48,17 @@ export const Schemas = {
                 )
                 .optional(),
             description: Joi.string().optional().allow(''),
-            IsDeleted: Joi.boolean().optional()
+            IsDeleted: Joi.boolean().optional(),
+            hasSeenTutorial: Joi.boolean().optional()
         }),
         update: Joi.object<IUsuario>({
             name: Joi.string().optional(),
             email: Joi.string().email().optional(),
             password: Joi.string().min(6).optional(),
+            authProvider: Joi.string().valid('local', 'google', 'apple').optional(),
+            googleId: Joi.string().optional(),
+            appleId: Joi.string().optional(),
+            avatar: Joi.string().optional(),
             rol: Joi.string().valid('Admin', 'User').optional(),
             libros: Joi.array().items(Joi.string().optional()),
             favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
@@ -63,7 +72,8 @@ export const Schemas = {
                 )
                 .optional(),
             description: Joi.string().optional().allow(''),
-            IsDeleted: Joi.boolean().optional()
+            IsDeleted: Joi.boolean().optional(),
+            hasSeenTutorial: Joi.boolean().optional()
         })
     },
     Autor: {
@@ -200,6 +210,11 @@ export const Schemas = {
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required()
     }),
+    socialLogin: Joi.object({
+        provider: Joi.string().valid('google', 'apple').required(),
+        idToken: Joi.string().required(),
+        name: Joi.string().optional()
+    }),
     valoracion: {
         create: Joi.object({
             usuarioValorado: Joi.string()
@@ -208,9 +223,24 @@ export const Schemas = {
             libro: Joi.string()
                 .regex(/^[0-9a-fA-F]{24}$/)
                 .required(),
-            tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER').required(),
+            tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER', 'RESERVA').required(),
             puntuacion: Joi.number().min(1).max(5).required(),
-            comentario: Joi.string().optional().allow('')
+            comentario: Joi.string().optional().allow(''),
+            reservationId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional()
+        })
+    },
+    reserva: {
+        create: Joi.object({
+            libroId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required()
+        }),
+        aceptar: Joi.object({
+            dias: Joi.number().min(1).optional()
+        })
+    },
+    messageRequest: {
+        create: Joi.object({
+            bookId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
+            initialMessage: Joi.string().optional().allow('')
         })
     },
     recomendacion: {
@@ -230,3 +260,4 @@ export const Schemas = {
         })
     }
 };
+
