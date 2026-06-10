@@ -363,7 +363,13 @@ router.get('/', TokenValidation, controller.getAllUsuarios_NOT_Deleted);
  *       422:
  *         description: Error de validación en los datos enviados
  */
-router.put('/:usuarioId', TokenValidation, isSelfOrAdmin, ValidateJoi(Schemas.usuario.update), controller.updateUsuario);
+router.put(
+  '/:usuarioId',
+  TokenValidation,
+  isSelfOrAdmin,
+  ValidateJoi(Schemas.usuario.update),
+  controller.updateUsuario,
+);
 
 /**
  * @openapi
@@ -419,7 +425,12 @@ router.delete('/:usuarioId', TokenValidation, isSelfOrAdmin, controller.deleteUs
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/permanent/:usuarioId', TokenValidation, isSelfOrAdmin, controller.permanentDeleteUsuario);
+router.delete(
+  '/permanent/:usuarioId',
+  TokenValidation,
+  isSelfOrAdmin,
+  controller.permanentDeleteUsuario,
+);
 
 /**
  * @openapi

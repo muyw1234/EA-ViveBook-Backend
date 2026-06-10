@@ -14,8 +14,9 @@ Hemos modelado 5 entidades principales en nuestra base de datos. Cada una tiene 
 1. **🧑‍💻 Usuarios (`/usuarios`)**: Personas registradas en la plataforma.
 2. **🏪 Librerías (`/librerias`)**: Los espacios físicos que organizan eventos y sirven de punto de intercambio de libros.
 3. **📖 Libros (`/libros`)**: Obras puestas en subida por los usuarios para _"VENTA"_ o _"ALQUILER"_.
-4. **🎟️ Eventos (`/eventos`)**: Actividades, charlas o clubes de lectura organizados por una librería.
-5. **💬 Chats & Mensajes (`/chats` y `/mensajes`)**: Un sistema para que dos usuarios abran un canal de comunicación para hablar (por ejemplo, sobre un libro que quieren comprar).
+4. **📖 Libros (`/libros`)**: Obras puestas en subida por los usuarios para _"VENTA"_ o _"ALQUILER"_.
+5. **🎟️ Eventos (`/eventos`)**: Actividades, charlas o clubes de lectura organizados por una librería.
+6. **💬 Chats & Mensajes (`/chats` y `/mensajes`)**: Un sistema para que dos usuarios abran un canal de comunicación para hablar (por ejemplo, sobre un libro que quieren comprar).
 
 ---
 
@@ -39,6 +40,7 @@ Compilamos el código de TypeScript y levantamos la API:
 npm run go
 ```
 
+_(Si todo va bien, verás en la consola que Mongo se ha conectado y el servidor corre en el puerto 1337)._
 _(Si todo va bien, verás en la consola que Mongo se ha conectado y el servidor corre en el puerto 1337)._
 
 ### 3. Ver la Documentación en Swagger 👀
