@@ -42,7 +42,7 @@ export const verifyAppleToken = async (idToken: string): Promise<SocialUser> => 
       sub: payload.sub,
     };
   } catch (error) {
-    throw new Error('Invalid Apple token');
+    throw new Error('Invalid Apple token', { cause: error });
   }
 };
 

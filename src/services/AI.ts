@@ -90,7 +90,9 @@ export async function generateText(
       raw: response.data,
     };
   } catch (error) {
-    throw new Error(`No se pudo generar la respuesta del LLM: ${getAxiosErrorMessage(error)}`);
+    throw new Error(`No se pudo generar la respuesta del LLM: ${getAxiosErrorMessage(error)}`, {
+      cause: error,
+    });
   }
 }
 
@@ -112,7 +114,9 @@ export async function generateEmbedding(
 
     return extractEmbedding(response.data);
   } catch (error) {
-    throw new Error(`No se pudo generar el embedding: ${getAxiosErrorMessage(error)}`);
+    throw new Error(`No se pudo generar el embedding: ${getAxiosErrorMessage(error)}`, {
+      cause: error,
+    });
   }
 }
 

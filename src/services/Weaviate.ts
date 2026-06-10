@@ -144,6 +144,7 @@ export async function ensureLibroSchema(): Promise<void> {
     if (!axios.isAxiosError(error) || error.response?.status !== 404) {
       throw new Error(
         `No se pudo comprobar el esquema de Weaviate: ${getAxiosErrorMessage(error)}`,
+        { cause: error },
       );
     }
   }
