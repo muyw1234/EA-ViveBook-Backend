@@ -1,31 +1,31 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IValoracion {
-    usuarioAutor: mongoose.Types.ObjectId | string;
-    usuarioValorado: mongoose.Types.ObjectId | string;
-    libro: mongoose.Types.ObjectId | string;
-    tipoOperacion: 'VENTA' | 'ALQUILER' | 'RESERVA';
-    puntuacion: number;
-    comentario?: string;
-    reservationId?: mongoose.Types.ObjectId | string;
+  usuarioAutor: mongoose.Types.ObjectId | string;
+  usuarioValorado: mongoose.Types.ObjectId | string;
+  libro: mongoose.Types.ObjectId | string;
+  tipoOperacion: 'VENTA' | 'ALQUILER' | 'RESERVA';
+  puntuacion: number;
+  comentario?: string;
+  reservationId?: mongoose.Types.ObjectId | string;
 }
 
 export interface IValoracionModel extends IValoracion, Document {}
 
 const ValoracionSchema: Schema = new Schema(
-    {
-        usuarioAutor: { type: Schema.Types.ObjectId, required: true, ref: 'Usuario' },
-        usuarioValorado: { type: Schema.Types.ObjectId, required: true, ref: 'Usuario' },
-        libro: { type: Schema.Types.ObjectId, required: true, ref: 'Libro' },
-        tipoOperacion: { type: String, enum: ['VENTA', 'ALQUILER', 'RESERVA'], required: true },
-        puntuacion: { type: Number, required: true, min: 1, max: 5 },
-        comentario: { type: String, required: false, default: '' },
-        reservationId: { type: Schema.Types.ObjectId, ref: 'Reserva', required: false }
-    },
-    {
-        timestamps: true,
-        versionKey: false
-    }
+  {
+    usuarioAutor: { type: Schema.Types.ObjectId, required: true, ref: 'Usuario' },
+    usuarioValorado: { type: Schema.Types.ObjectId, required: true, ref: 'Usuario' },
+    libro: { type: Schema.Types.ObjectId, required: true, ref: 'Libro' },
+    tipoOperacion: { type: String, enum: ['VENTA', 'ALQUILER', 'RESERVA'], required: true },
+    puntuacion: { type: Number, required: true, min: 1, max: 5 },
+    comentario: { type: String, required: false, default: '' },
+    reservationId: { type: Schema.Types.ObjectId, ref: 'Reserva', required: false },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  },
 );
 
 // Indexes to enforce single rating per transition

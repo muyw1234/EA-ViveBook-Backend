@@ -16,35 +16,35 @@ const ProgresoRetoSchema: Schema = new Schema(
     usuario: {
       type: Schema.Types.ObjectId,
       ref: 'Usuario',
-      required: true
+      required: true,
     },
     reto: {
       type: Schema.Types.ObjectId,
       ref: 'Reto',
-      required: true
+      required: true,
     },
     progresoActual: {
       type: Number,
       default: 0,
-      min: 0
+      min: 0,
     },
     objetivo: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
     },
     completado: {
       type: Boolean,
-      default: false
+      default: false,
     },
     fechaCompletado: {
-      type: Date
-    }
+      type: Date,
+    },
   },
   {
     timestamps: true,
-    versionKey: false
-  }
+    versionKey: false,
+  },
 );
 
 ProgresoRetoSchema.index({ usuario: 1, reto: 1 }, { unique: true });

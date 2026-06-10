@@ -5,7 +5,12 @@ import { TokenValidation } from '../middleware/verifyToken';
 
 const router = express.Router();
 
-router.post('/', TokenValidation, ValidateJoi(Schemas.messageRequest.create), controller.createMessageRequest);
+router.post(
+  '/',
+  TokenValidation,
+  ValidateJoi(Schemas.messageRequest.create),
+  controller.createMessageRequest,
+);
 router.get('/received', TokenValidation, controller.getReceivedRequests);
 router.get('/sent', TokenValidation, controller.getSentRequests);
 router.patch('/:id/accept', TokenValidation, controller.acceptMessageRequest);

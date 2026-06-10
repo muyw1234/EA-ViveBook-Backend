@@ -22,11 +22,11 @@ const RetoSchema: Schema = new Schema(
   {
     title: {
       type: String,
-      required: true
+      required: true,
     },
     description: {
       type: String,
-      required: true
+      required: true,
     },
     type: {
       type: String,
@@ -36,24 +36,24 @@ const RetoSchema: Schema = new Schema(
         'SEGUIR_USUARIOS',
         'RECIBIR_VALORACIONES',
         'ASISTIR_EVENTOS',
-        'SUBIR_LIBROS'
+        'SUBIR_LIBROS',
       ],
-      required: true
+      required: true,
     },
     objetivo: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
     },
     activo: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   {
     timestamps: true,
-    versionKey: false
-  }
+    versionKey: false,
+  },
 );
 
 export default mongoose.model<IRetoModel>('Reto', RetoSchema);

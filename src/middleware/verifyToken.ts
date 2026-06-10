@@ -33,24 +33,24 @@ export const TokenValidation = (req: Request, res: Response, next: NextFunction)
 
 /** Middleware para rutas públicas que pueden mostrar contenido personalizado si el usuario está logueado */
 export const OptionalTokenValidation = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.header('Authorization');
+  const authHeader = req.header('Authorization');
 
-    if (!authHeader) {
-        return next();
-    }
+  if (!authHeader) {
+    return next();
+  }
 
-    try {
-        const token = authHeader.split(' ')[1];
-        if (!token) return next();
-        
-        const payload = jwt.verify(token, config.jwt.accessSecret) as IPayload;
-        req.userId = payload._id;
-        req.userRol = payload.rol;
-    } catch (error) {
-        Logging.warning(`Optional token validation failed: ${error}`);
-        // No devolvemos error, simplemente continuamos sin userId
-    }
-    next();
+  try {
+    const token = authHeader.split(' ')[1];
+    if (!token) return next();
+
+    const payload = jwt.verify(token, config.jwt.accessSecret) as IPayload;
+    req.userId = payload._id;
+    req.userRol = payload.rol;
+  } catch (error) {
+    Logging.warning(`Optional token validation failed: ${error}`);
+    // No devolvemos error, simplemente continuamos sin userId
+  }
+  next();
 };
 
 // Una funcion para verificar el rol si lo llegamos a tener
