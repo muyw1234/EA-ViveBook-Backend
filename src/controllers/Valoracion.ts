@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import ValoracionService from '../services/Valoracion';
 import Logging from '../library/Logging';
 import { actualizarProgresoRetos } from '../services/Retos';
+import { sendPushNotification } from '../services/NotificationService';
+import Usuario from '../models/Usuario';
 
 const createValoracion = async (req: Request, res: Response, next: NextFunction) => {
   const usuarioAutor = req.userId;
@@ -27,6 +29,25 @@ const createValoracion = async (req: Request, res: Response, next: NextFunction)
 
     if (usuarioValorado) {
       await actualizarProgresoRetos(usuarioValorado, 'RECIBIR_VALORACIONES');
+
+      // Send push notification to user being rated if not self
+      if (usuarioValorado.toString() !== usuarioAutor.toString()) {
+        const actorUser = await Usuario.findById(usuarioAutor);
+        const recipient = await Usuario.findById(usuarioValorado);
+
+        if (actorUser && recipient) {
+          await sendPushNotification({
+            recipient,
+            title: 'Nueva valoración',
+            body: `Has recibido una valoración de ${actorUser.name}`,
+            data: {
+              type: 'new_rating',
+              actorId: usuarioAutor,
+              targetId: savedValoracion?._id || '',
+            },
+          });
+        }
+      }
     }
 
     return res.status(201).json(savedValoracion);
