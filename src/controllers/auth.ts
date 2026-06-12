@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import UsuarioService from '../services/Usuario';
 import Usuario, { IUsuarioModel } from '../models/Usuario';
+import Libro from '../models/Libro';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
 import { IPayload } from '../middleware/verifyToken';
@@ -88,7 +89,9 @@ export const profile = async (req: Request, res: Response, next: NextFunction) =
         path: 'rentedLibros',
         populate: { path: 'owner', select: '_id name' },
       })
-      .populate('followingUsers', 'name email');
+      .populate('followingUsers', 'name email')
+      .populate('wishlist')
+      .populate('favoriteBooks');
 
     if (!usuario) {
       Logging.warning(`Profile requested for non-existent user ID: ${req.userId}`);
@@ -191,6 +194,73 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const getProfileLibros = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'No userId found in request' });
+    }
+
+    const category = (req.query.category as string) || 'uploaded';
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 6;
+
+    const usuario = await Usuario.findById(req.userId);
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    let bookIds: any[] = [];
+    if (category === 'uploaded') {
+      bookIds = usuario.libros || [];
+    } else if (category === 'bought') {
+      bookIds = usuario.boughtLibros || [];
+    } else if (category === 'rented') {
+      bookIds = usuario.rentedLibros || [];
+    } else if (category === 'wishlist') {
+      bookIds = usuario.wishlist || [];
+    } else {
+      return res.status(400).json({ message: 'Categoría inválida' });
+    }
+
+    const total = bookIds.length;
+    const totalPages = Math.ceil(total / limit);
+
+    const paginatedIds = bookIds.slice((page - 1) * limit, page * limit);
+
+    let libros: any[] = [];
+    if (paginatedIds.length > 0) {
+      const query = Libro.find({ _id: { $in: paginatedIds } });
+      if (category === 'bought' || category === 'rented') {
+        query.populate('owner', '_id name');
+      }
+      const fetchedLibros = await query;
+      
+      // Map back to the original order of paginatedIds
+      const libroMap = new Map(fetchedLibros.map((b) => [b._id.toString(), b]));
+      libros = paginatedIds.map((id) => libroMap.get(id.toString())).filter(Boolean);
+    }
+
+    const counts = {
+      uploaded: usuario.libros ? usuario.libros.length : 0,
+      bought: usuario.boughtLibros ? usuario.boughtLibros.length : 0,
+      rented: usuario.rentedLibros ? usuario.rentedLibros.length : 0,
+      wishlist: usuario.wishlist ? usuario.wishlist.length : 0
+    };
+
+    return sendSuccess(res, {
+      libros,
+      page,
+      limit,
+      total,
+      totalPages,
+      counts
+    }, 'Libros de biblioteca obtenidos con éxito');
+  } catch (error: any) {
+    Logging.error(`Error in getProfileLibros controller: ${error}`);
+    return sendError(res, error, 'Error al obtener los libros del perfil', 500);
+  }
+};
+
 //#endregion Autenticacion
 
-export default { signup, signin, profile, socialLogin };
+export default { signup, signin, profile, socialLogin, getProfileLibros };

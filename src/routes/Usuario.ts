@@ -483,4 +483,7 @@ router.delete(
  */
 router.put('/restore/:usuarioId', TokenValidation, isAdmin, controller.restoreUsuario);
 
+router.post('/wishlist/:libroId', TokenValidation, controller.toggleWishlist);
+router.post('/favoritos/:libroId', TokenValidation, controller.toggleFavorite);
+
 export default router;

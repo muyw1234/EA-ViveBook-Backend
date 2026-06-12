@@ -14,8 +14,9 @@ export interface IUsuario {
   boughtLibros: mongoose.Types.ObjectId[] | string[];
   rentedLibros: mongoose.Types.ObjectId[] | string[];
   favoriteAuthors?: string[];
-  favoriteBooks?: string[];
+  favoriteBooks?: mongoose.Types.ObjectId[] | string[] | any[];
   favoriteCategories?: string[];
+  wishlist?: mongoose.Types.ObjectId[] | string[] | any[];
   followingUsers?: mongoose.Types.ObjectId[] | string[];
   favoritos: mongoose.Types.ObjectId[] | string[];
   description?: string;
@@ -48,8 +49,9 @@ const UsuarioSchema: Schema = new Schema(
     boughtLibros: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
     rentedLibros: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
     favoriteAuthors: [{ type: String, required: false }],
-    favoriteBooks: [{ type: String, required: false }],
+    favoriteBooks: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
     favoriteCategories: [{ type: String, required: false }],
+    wishlist: [{ type: Schema.Types.ObjectId, required: false, ref: 'Libro' }],
     followingUsers: [{ type: Schema.Types.ObjectId, required: false, ref: 'Usuario' }],
     favoritos: { type: [{ type: Schema.Types.ObjectId, ref: 'Libro' }], default: [] },
     description: { type: String, required: false, default: '' },

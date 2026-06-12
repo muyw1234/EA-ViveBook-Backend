@@ -38,8 +38,21 @@ export const Schemas = {
       rol: Joi.string().valid('Admin', 'User').default('User'),
       libros: Joi.array().items(Joi.string().optional()),
       favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
-      favoriteBooks: Joi.array().items(Joi.string().optional()).max(5).optional(),
+      favoriteBooks: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
       favoriteCategories: Joi.array().items(Joi.string().optional()).optional(),
+      wishlist: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
       followingUsers: Joi.array()
         .items(
           Joi.string()
@@ -70,8 +83,21 @@ export const Schemas = {
       rol: Joi.string().valid('Admin', 'User').optional(),
       libros: Joi.array().items(Joi.string().optional()),
       favoriteAuthors: Joi.array().items(Joi.string().optional()).max(5).optional(),
-      favoriteBooks: Joi.array().items(Joi.string().optional()).max(5).optional(),
+      favoriteBooks: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
       favoriteCategories: Joi.array().items(Joi.string().optional()).optional(),
+      wishlist: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
       followingUsers: Joi.array()
         .items(
           Joi.string()

@@ -10,9 +10,11 @@ const createUsuario = async (data: Partial<IUsuario>): Promise<IUsuarioModel> =>
 
   return await usuario.save();
 };
-
 const getUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> => {
-  return await Usuario.findById(usuarioId).populate('libros', 'title');
+  return await Usuario.findById(usuarioId)
+    .populate('libros', 'title')
+    .populate('wishlist')
+    .populate('favoriteBooks');
 };
 
 const getFollowers = async (usuarioId: string) => {

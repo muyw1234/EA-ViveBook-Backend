@@ -230,6 +230,84 @@ async function searchUsuarioByName(req: Request, res: Response, next: NextFuncti
   }
 }
 
+const toggleWishlist = async (req: Request, res: Response, next: NextFunction) => {
+  const libroId = req.params.libroId;
+  const userId = req.userId;
+
+  if (!mongoose.Types.ObjectId.isValid(libroId)) {
+    return res.status(400).json({ message: 'Invalid book ID format' });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  try {
+    const usuario = await Usuario.findById(userId);
+    if (!usuario) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    if (!usuario.wishlist) {
+      usuario.wishlist = [];
+    }
+
+    const index = usuario.wishlist.findIndex((id: any) => id && id.toString() === libroId);
+    let message = '';
+    if (index > -1) {
+      usuario.wishlist.splice(index, 1);
+      message = 'Libro eliminado de la lista de deseos';
+    } else {
+      usuario.wishlist.push(libroId);
+      message = 'Libro añadido a la lista de deseos';
+    }
+
+    usuario.markModified('wishlist');
+    await usuario.save();
+    return sendSuccess(res, usuario, message);
+  } catch (error) {
+    return sendError(res, error, 'Error al modificar la lista de deseos');
+  }
+};
+
+const toggleFavorite = async (req: Request, res: Response, next: NextFunction) => {
+  const libroId = req.params.libroId;
+  const userId = req.userId;
+
+  if (!mongoose.Types.ObjectId.isValid(libroId)) {
+    return res.status(400).json({ message: 'Invalid book ID format' });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  try {
+    const usuario = await Usuario.findById(userId);
+    if (!usuario) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    if (!usuario.favoriteBooks) {
+      usuario.favoriteBooks = [];
+    }
+
+    const index = usuario.favoriteBooks.findIndex((id: any) => id && id.toString() === libroId);
+    let message = '';
+    if (index > -1) {
+      usuario.favoriteBooks.splice(index, 1);
+      message = 'Libro eliminado de favoritos';
+    } else {
+      usuario.favoriteBooks.push(libroId);
+      message = 'Libro añadido a favoritos';
+    }
+
+    usuario.markModified('favoriteBooks');
+    await usuario.save();
+    return sendSuccess(res, usuario, message);
+  } catch (error) {
+    return sendError(res, error, 'Error al modificar favoritos');
+  }
+};
+
 const toggleFavorito = async (req: Request, res: Response, next: NextFunction) => {
   const { libroId } = req.params;
   const usuarioId = req.userId;
@@ -453,6 +531,8 @@ export default {
   permanentDeleteUsuario,
   restoreUsuario,
   searchUsuarioByName,
+  toggleWishlist,
+  toggleFavorite,
   toggleFavorito,
   getFavoritos,
   checkFavorito,
