@@ -3,6 +3,9 @@ import EventoService from '../services/Evento';
 import { getPaginationParams } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
+import { sendPushNotification } from '../services/NotificationService';
+import Usuario from '../models/Usuario';
+import Evento from '../models/Evento';
 
 const createEvento = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -32,7 +35,27 @@ const getEvento = async (req: Request, res: Response, next: NextFunction) => {
 const getAllEventos = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = getPaginationParams(req);
-    const eventos = await EventoService.getAllEventos(page, limit);
+    const filter: any = { IsDeleted: { $ne: true } };
+
+    if (req.query.upcoming === 'true') {
+      filter.eventDate = { $gte: new Date() };
+    }
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search as string, 'i');
+      filter.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { direccionExacta: searchRegex },
+      ];
+    }
+
+    let sort: any = { _id: 1 };
+    if (req.query.sort === 'eventDate') {
+      sort = { eventDate: 1 };
+    }
+
+    const eventos = await EventoService.getAllEventos(page, limit, filter, sort);
 
     return sendSuccess(res, eventos, 'Listado de eventos obtenido con éxito');
   } catch (error) {
@@ -125,6 +148,15 @@ const participarEvento = async (req: Request, res: Response, next: NextFunction)
   }
 
   try {
+    const eventoAntes = await Evento.findById(eventoId);
+    if (!eventoAntes) {
+      return sendError(res, 'No se encontró el evento para participar', 'Not Found', 404);
+    }
+
+    const isAlreadyParticipating = (eventoAntes.participant || [])
+      .map((id: any) => id.toString())
+      .includes(usuarioId);
+
     const evento = await EventoService.participarEvento(eventoId, usuarioId);
 
     if (!evento) {
@@ -132,6 +164,26 @@ const participarEvento = async (req: Request, res: Response, next: NextFunction)
     }
 
     await actualizarProgresoRetos(usuarioId, 'ASISTIR_EVENTOS');
+
+    // Send push notification to event creator if new participant and not self
+    if (!isAlreadyParticipating && evento.creator && evento.creator.toString() !== usuarioId) {
+      const actorUser = await Usuario.findById(usuarioId);
+      const recipient = await Usuario.findById(evento.creator);
+
+      if (actorUser && recipient) {
+        await sendPushNotification({
+          recipient,
+          title: 'Nuevo asistente',
+          body: `${actorUser.name} se ha apuntado a tu evento`,
+          data: {
+            type: 'event_joined',
+            actorId: usuarioId,
+            targetId: eventoId,
+            eventId: eventoId,
+          },
+        });
+      }
+    }
 
     return sendSuccess(res, evento, 'Te has apuntado al evento con éxito');
   } catch (error) {

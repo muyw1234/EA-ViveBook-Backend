@@ -17,11 +17,16 @@ const getEvento = async (eventoId: string): Promise<IEventoModel | null> => {
   return evento;
 };
 
-const getAllEventos = async (page = 1, limit = 10): Promise<PaginatedResult<IEventoModel>> => {
+const getAllEventos = async (
+  page = 1,
+  limit = 10,
+  filter: any = {},
+  sort: any = { _id: 1 },
+): Promise<PaginatedResult<IEventoModel>> => {
   const pagination = getPagination(page, limit);
   const [data, total] = await Promise.all([
-    Evento.find().sort({ _id: 1 }).skip(pagination.skip).limit(pagination.limit),
-    Evento.countDocuments(),
+    Evento.find(filter).sort(sort).skip(pagination.skip).limit(pagination.limit),
+    Evento.countDocuments(filter),
   ]);
 
   return {

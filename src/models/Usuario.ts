@@ -21,6 +21,8 @@ export interface IUsuario {
   description?: string;
   IsDeleted?: boolean;
   hasSeenTutorial?: boolean;
+  expoPushToken?: string;
+  notificationUsersEnabled?: mongoose.Types.ObjectId[] | string[];
   encryptPassword(password: string): Promise<string>;
   validatePassword(password: string): Promise<boolean>;
 }
@@ -53,6 +55,8 @@ const UsuarioSchema: Schema = new Schema(
     description: { type: String, required: false, default: '' },
     IsDeleted: { type: Boolean, default: false },
     hasSeenTutorial: { type: Boolean, default: false },
+    expoPushToken: { type: String, required: false },
+    notificationUsersEnabled: [{ type: Schema.Types.ObjectId, ref: 'Usuario', default: [] }],
   },
   {
     timestamps: true,

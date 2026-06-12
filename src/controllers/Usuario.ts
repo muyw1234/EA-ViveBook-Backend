@@ -7,6 +7,8 @@ import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
 import { getUserLevel } from '../services/Niveles';
+import { sendPushNotification } from '../services/NotificationService';
+import Libro from '../models/Libro';
 
 const createUsuario = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -95,8 +97,8 @@ const updateUsuario = async (req: Request, res: Response, next: NextFunction) =>
     }
 
     const followingAntes = Array.isArray((usuarioAntes as any).followingUsers)
-      ? (usuarioAntes as any).followingUsers.length
-      : 0;
+      ? (usuarioAntes as any).followingUsers.map((id: any) => id.toString())
+      : [];
 
     const updatedUsuario = await UsuarioService.updateUsuario(usuarioId, req.body);
 
@@ -105,15 +107,44 @@ const updateUsuario = async (req: Request, res: Response, next: NextFunction) =>
     }
 
     const followingDespues = Array.isArray((updatedUsuario as any).followingUsers)
-      ? (updatedUsuario as any).followingUsers.length
-      : 0;
+      ? (updatedUsuario as any).followingUsers.map((id: any) => id.toString())
+      : [];
 
-    if (req.body.followingUsers && followingDespues > followingAntes) {
+    if (req.body.followingUsers && followingDespues.length > followingAntes.length) {
       await actualizarProgresoRetos(
         usuarioId,
         'SEGUIR_USUARIOS',
-        followingDespues - followingAntes,
+        followingDespues.length - followingAntes.length,
       );
+    }
+
+    // Push notification integration for follow
+    if (req.body.followingUsers) {
+      const newlyFollowed = followingDespues.filter((id: string) => !followingAntes.includes(id));
+      for (const targetUserId of newlyFollowed) {
+        if (targetUserId !== usuarioId) {
+          const recipient = await Usuario.findById(targetUserId);
+          if (recipient) {
+            await sendPushNotification({
+              recipient,
+              title: 'Nuevo seguidor',
+              body: `${updatedUsuario.name} ha empezado a seguirte`,
+              data: {
+                type: 'new_follower',
+                actorId: usuarioId,
+                targetId: targetUserId,
+              },
+            });
+          }
+        }
+      }
+
+      const unfollowed = followingAntes.filter((id: string) => !followingDespues.includes(id));
+      if (unfollowed.length > 0) {
+        await Usuario.findByIdAndUpdate(usuarioId, {
+          $pull: { notificationUsersEnabled: { $in: unfollowed } },
+        });
+      }
     }
 
     return sendSuccess(res, updatedUsuario, 'Usuario actualizado con éxito');
@@ -182,9 +213,9 @@ async function searchUsuarioByName(req: Request, res: Response, next: NextFuncti
   Logging.info(`Searching the term: ${term}`);
 
   try {
-    const usuarios = await UsuarioService.searchUsuarioByName(term, page, limit);
+    const result = await UsuarioService.searchUsuarioByName(term, page, limit);
 
-    if (usuarios.length === 0) {
+    if (result.data.length === 0) {
       return sendError(
         res,
         `No se encontraron usuarios coincidentes con el término: ${term}`,
@@ -193,9 +224,9 @@ async function searchUsuarioByName(req: Request, res: Response, next: NextFuncti
       );
     }
 
-    return sendSuccess(res, usuarios, 'Búsqueda de usuarios realizada con éxito');
+    return sendSuccess(res, result, 'Búsqueda de usuarios realizada con éxito');
   } catch (error) {
-    return sendError(res, error, 'Error al procesar la consulta de búsqueda de usuarios');
+    return sendError(res, error, 'Error al procesar la búsqueda de usuarios');
   }
 }
 
@@ -212,13 +243,164 @@ const toggleFavorito = async (req: Request, res: Response, next: NextFunction) =
   }
 
   try {
+    const actorUser = await Usuario.findById(usuarioId);
+    if (!actorUser) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    const libro = await Libro.findById(libroId);
+    if (!libro) {
+      return sendError(res, 'Libro no encontrado', 'Not Found', 404);
+    }
+
+    // Check if already favorite before action
+    const isAlreadyFavorite = await UsuarioService.isFavorito(usuarioId, libroId);
+
     const result = await UsuarioService.toggleFavorito(usuarioId, libroId);
     if (!result) {
       return sendError(res, 'No se pudo actualizar favoritos', 'Not Found', 404);
     }
+
+    // Send push notification if it was NOT a favorite before and owner is not the actor
+    if (!isAlreadyFavorite && libro.owner && libro.owner.toString() !== usuarioId) {
+      const recipient = await Usuario.findById(libro.owner);
+      if (recipient) {
+        await sendPushNotification({
+          recipient,
+          title: 'Nuevo favorito',
+          body: `${actorUser.name} ha añadido tu libro a favoritos`,
+          data: {
+            type: 'book_favorite',
+            actorId: usuarioId,
+            targetId: libroId,
+            bookId: libroId,
+          },
+        });
+      }
+    }
+
     return sendSuccess(res, result.favoritos, 'Favoritos actualizados con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al actualizar favoritos');
+  }
+};
+
+const updatePushToken = async (req: Request, res: Response, next: NextFunction) => {
+  const usuarioId = req.userId;
+  const { expoPushToken } = req.body;
+
+  if (!usuarioId) {
+    return res.status(401).json({ message: 'No autenticado' });
+  }
+
+  try {
+    const updatedUsuario = await Usuario.findByIdAndUpdate(
+      usuarioId,
+      { expoPushToken },
+      { new: true },
+    );
+
+    if (!updatedUsuario) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    return sendSuccess(
+      res,
+      { expoPushToken: updatedUsuario.expoPushToken },
+      'Token push actualizado con éxito',
+    );
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar el token push');
+  }
+};
+
+const enableNotifications = async (req: Request, res: Response, next: NextFunction) => {
+  const { usuarioId } = req.params;
+  const currentUserId = req.userId;
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'No autenticado' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+    return res.status(400).json({ message: 'Formato de ID de usuario inválido' });
+  }
+
+  if (currentUserId === usuarioId) {
+    return res.status(400).json({ message: 'No puedes activar notificaciones para ti mismo' });
+  }
+
+  try {
+    const currentUser = await Usuario.findById(currentUserId);
+    if (!currentUser) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    const following = (currentUser.followingUsers || []).map((id: any) => id.toString());
+    if (!following.includes(usuarioId)) {
+      return res
+        .status(400)
+        .json({ message: 'Debes seguir al usuario para poder activar sus notificaciones' });
+    }
+
+    await Usuario.findByIdAndUpdate(currentUserId, {
+      $addToSet: { notificationUsersEnabled: usuarioId },
+    });
+
+    return sendSuccess(res, { enabled: true }, 'Notificaciones activadas con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al activar notificaciones');
+  }
+};
+
+const disableNotifications = async (req: Request, res: Response, next: NextFunction) => {
+  const { usuarioId } = req.params;
+  const currentUserId = req.userId;
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'No autenticado' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+    return res.status(400).json({ message: 'Formato de ID de usuario inválido' });
+  }
+
+  try {
+    await Usuario.findByIdAndUpdate(currentUserId, {
+      $pull: { notificationUsersEnabled: usuarioId },
+    });
+
+    return sendSuccess(res, { enabled: false }, 'Notificaciones desactivadas con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar notificaciones');
+  }
+};
+
+const getNotificationStatus = async (req: Request, res: Response, next: NextFunction) => {
+  const { usuarioId } = req.params;
+  const currentUserId = req.userId;
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'No autenticado' });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+    return res.status(400).json({ message: 'Formato de ID de usuario inválido' });
+  }
+
+  try {
+    const currentUser = await Usuario.findById(currentUserId);
+    if (!currentUser) {
+      return sendError(res, 'Usuario no encontrado', 'Not Found', 404);
+    }
+
+    const enabled = (currentUser.notificationUsersEnabled || [])
+      .map((id: any) => id.toString())
+      .includes(usuarioId);
+
+    return sendSuccess(res, { enabled }, 'Consulta de estado de notificaciones exitosa');
+  } catch (error) {
+    return sendError(res, error, 'Error al consultar estado de notificaciones');
   }
 };
 
@@ -274,4 +456,8 @@ export default {
   toggleFavorito,
   getFavoritos,
   checkFavorito,
+  updatePushToken,
+  enableNotifications,
+  disableNotifications,
+  getNotificationStatus,
 };

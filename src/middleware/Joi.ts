@@ -50,6 +50,14 @@ export const Schemas = {
       description: Joi.string().optional().allow(''),
       IsDeleted: Joi.boolean().optional(),
       hasSeenTutorial: Joi.boolean().optional(),
+      expoPushToken: Joi.string().optional(),
+      notificationUsersEnabled: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
     }),
     update: Joi.object<IUsuario>({
       name: Joi.string().optional(),
@@ -74,6 +82,17 @@ export const Schemas = {
       description: Joi.string().optional().allow(''),
       IsDeleted: Joi.boolean().optional(),
       hasSeenTutorial: Joi.boolean().optional(),
+      expoPushToken: Joi.string().optional(),
+      notificationUsersEnabled: Joi.array()
+        .items(
+          Joi.string()
+            .regex(/^[0-9a-fA-F]{24}$/)
+            .optional(),
+        )
+        .optional(),
+    }),
+    updatePushToken: Joi.object({
+      expoPushToken: Joi.string().required(),
     }),
   },
   Autor: {
