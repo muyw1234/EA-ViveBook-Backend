@@ -73,7 +73,8 @@ const getChatMessages = async (req: Request, res: Response, next: NextFunction) 
       return sendError(res, 'El chat no existe', 'Not Found', 404);
     }
     // Validate participant
-    if (!chat.participants.map((p) => p.toString()).includes(userId)) {
+    const GLOBAL_CHAT_ID = '000000000000000000000001';
+    if (chatId !== GLOBAL_CHAT_ID && !chat.participants.map((p) => p.toString()).includes(userId)) {
       return sendError(res, 'No tienes permiso para ver este chat', 'Forbidden', 403);
     }
     const mensajes = await Mensaje.find({ chat: chatId }).populate('sender');
@@ -101,7 +102,8 @@ const sendChatMessage = async (req: Request, res: Response, next: NextFunction) 
       return sendError(res, 'El chat no existe', 'Not Found', 404);
     }
     // Validate participant
-    if (!chat.participants.map((p) => p.toString()).includes(userId)) {
+    const GLOBAL_CHAT_ID = '000000000000000000000001';
+    if (chatId !== GLOBAL_CHAT_ID && !chat.participants.map((p) => p.toString()).includes(userId)) {
       return sendError(res, 'No tienes permiso para enviar mensajes a este chat', 'Forbidden', 403);
     }
 
