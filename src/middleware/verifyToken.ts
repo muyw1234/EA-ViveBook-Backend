@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
 import Logging from '../library/Logging';
 import bcrypt from 'bcryptjs';
+import { ApiError, sendError } from '../library/ApiResponse';
 
 export interface IPayload {
   _id: string;
@@ -16,18 +17,30 @@ export const TokenValidation = (req: Request, res: Response, next: NextFunction)
 
   if (!authHeader) {
     Logging.warning('Token validation failed: No Authorization header provided');
-    return res.status(401).json({ message: 'No hay token' });
+    return sendError(
+      res,
+      new ApiError(401, 'No se ha proporcionado un token de acceso', 'UNAUTHORIZED'),
+    );
   }
 
   try {
-    const token = authHeader.split(' ')[1];
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      return sendError(
+        res,
+        new ApiError(401, 'El formato del token de acceso no es válido', 'UNAUTHORIZED'),
+      );
+    }
     const payload = jwt.verify(token, config.jwt.accessSecret) as IPayload;
     req.userId = payload._id;
     req.userRol = payload.rol;
     next();
   } catch (error) {
     Logging.error(`Token validation error: ${error}`);
-    return res.status(401).json({ message: 'Token inválido o expirado' });
+    return sendError(
+      res,
+      new ApiError(401, 'El token de acceso es inválido o ha expirado', 'UNAUTHORIZED'),
+    );
   }
 };
 

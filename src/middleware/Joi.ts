@@ -13,17 +13,32 @@ import { IPost } from '../models/Post';
 import { IValoracion } from '../models/Valoracion';
 import { IReserva } from '../models/Reserva';
 import { IReto } from '../models/Reto';
+import { ApiError, sendError } from '../library/ApiResponse';
 
 export const ValidateJoi = (schema: ObjectSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await schema.validateAsync(req.body);
-
+      req.body = await schema.validateAsync(req.body, { abortEarly: false });
       next();
     } catch (error) {
       Logging.error(error);
-
-      return res.status(422).json({ error });
+      const details =
+        error && typeof error === 'object' && 'details' in error && Array.isArray(error.details)
+          ? error.details.map((detail) => ({
+              field: detail.path.join('.'),
+              message: detail.message,
+              type: detail.type,
+            }))
+          : null;
+      return sendError(
+        res,
+        new ApiError(
+          422,
+          'Los datos enviados no superan la validación',
+          'VALIDATION_ERROR',
+          details,
+        ),
+      );
     }
   };
 };

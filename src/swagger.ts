@@ -1,6 +1,5 @@
 import swaggerJSDoc, { Options } from 'swagger-jsdoc';
 import path from 'path';
-import { config } from './config/config';
 
 const options: Options = {
   definition: {
@@ -12,7 +11,8 @@ const options: Options = {
     },
     servers: [
       {
-        url: `http://${config.server.swaggerUrl}:${config.server.swaggerPort}`,
+        url: '/',
+        description: 'Servidor actual',
       },
     ],
     components: {
@@ -36,22 +36,29 @@ const options: Options = {
         },
         ApiError: {
           type: 'object',
-          required: ['success', 'status', 'message'],
+          required: ['success', 'status', 'message', 'code', 'errors'],
           properties: {
             success: { type: 'boolean', example: false },
             status: { type: 'integer', example: 404 },
             message: { type: 'string', example: 'Recurso no encontrado' },
+            code: {
+              type: 'string',
+              enum: [
+                'BAD_REQUEST',
+                'UNAUTHORIZED',
+                'FORBIDDEN',
+                'NOT_FOUND',
+                'CONFLICT',
+                'VALIDATION_ERROR',
+                'INTERNAL_ERROR',
+              ],
+              example: 'NOT_FOUND',
+            },
             errors: { nullable: true },
           },
         },
         ValidationError: {
-          type: 'object',
-          properties: {
-            error: {
-              type: 'object',
-              description: 'Detalle devuelto por Joi.',
-            },
-          },
+          allOf: [{ $ref: '#/components/schemas/ApiError' }],
         },
       },
       responses: {
@@ -73,6 +80,14 @@ const options: Options = {
         },
         NotFound: {
           description: 'El recurso solicitado no existe.',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiError' },
+            },
+          },
+        },
+        BadRequest: {
+          description: 'La petición contiene datos o identificadores no válidos.',
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/ApiError' },
@@ -111,4 +126,33 @@ const options: Options = {
   apis: [path.join(__dirname, 'routes', '**', '*.js')],
 };
 
-export const swaggerSpec = swaggerJSDoc(options);
+type SwaggerDocument = Record<string, unknown> & {
+  paths?: Record<string, Record<string, unknown>>;
+};
+
+const generatedSpec = swaggerJSDoc(options) as SwaggerDocument;
+const adminPaths = generatedSpec.paths ?? {};
+
+for (const [pathName, pathItem] of Object.entries(adminPaths)) {
+  if (!pathName.startsWith('/admin/') || !pathItem || typeof pathItem !== 'object') continue;
+
+  for (const [method, operation] of Object.entries(pathItem)) {
+    if (!operation || typeof operation !== 'object' || !('responses' in operation)) continue;
+    const responses = operation.responses as Record<string, unknown>;
+    responses['400'] ??= { $ref: '#/components/responses/BadRequest' };
+    responses['401'] ??= { $ref: '#/components/responses/Unauthorized' };
+    responses['403'] ??= { $ref: '#/components/responses/Forbidden' };
+    responses['500'] ??= { $ref: '#/components/responses/InternalError' };
+    if (pathName.includes('{')) {
+      responses['404'] ??= { $ref: '#/components/responses/NotFound' };
+    }
+    if (['post', 'put', 'patch'].includes(method)) {
+      responses['409'] ??= { $ref: '#/components/responses/Conflict' };
+    }
+    if ('requestBody' in operation) {
+      responses['422'] ??= { $ref: '#/components/responses/ValidationFailed' };
+    }
+  }
+}
+
+export const swaggerSpec = generatedSpec;

@@ -3,6 +3,7 @@ import Libro from '../models/Libro';
 import Reserva, { IReserva, IReservaModel } from '../models/Reserva';
 import Usuario from '../models/Usuario';
 import { getPagination, PaginatedResult } from './Pagination';
+import { ApiError } from '../library/ApiResponse';
 
 export type AdminReservaQuery = {
   page?: number;
@@ -25,17 +26,25 @@ const validateRelations = async (data: Partial<IReserva>) => {
     data.propietario ? Usuario.findById(data.propietario) : null,
   ]);
 
-  if (data.libro && !libro) throw new Error('El libro indicado no existe');
-  if (data.usuarioSolicitante && !solicitante) {
-    throw new Error('El usuario solicitante indicado no existe');
+  if (data.libro && !libro) {
+    throw new ApiError(400, 'El libro indicado no existe', 'BAD_REQUEST');
   }
-  if (data.propietario && !propietario) throw new Error('El propietario indicado no existe');
+  if (data.usuarioSolicitante && !solicitante) {
+    throw new ApiError(400, 'El usuario solicitante indicado no existe', 'BAD_REQUEST');
+  }
+  if (data.propietario && !propietario) {
+    throw new ApiError(400, 'El propietario indicado no existe', 'BAD_REQUEST');
+  }
   if (
     data.usuarioSolicitante &&
     data.propietario &&
     data.usuarioSolicitante.toString() === data.propietario.toString()
   ) {
-    throw new Error('El solicitante y el propietario deben ser usuarios diferentes');
+    throw new ApiError(
+      400,
+      'El solicitante y el propietario deben ser usuarios diferentes',
+      'BAD_REQUEST',
+    );
   }
 };
 
@@ -51,7 +60,9 @@ const assertNoAcceptedConflict = async (
     estado: 'ACEPTADA',
     IsDeleted: { $ne: true },
   });
-  if (conflict) throw new Error('El libro ya tiene otra reserva aceptada y activa');
+  if (conflict) {
+    throw new ApiError(409, 'El libro ya tiene otra reserva aceptada y activa', 'CONFLICT');
+  }
 };
 
 const releaseBook = async (reserva: IReserva): Promise<void> => {

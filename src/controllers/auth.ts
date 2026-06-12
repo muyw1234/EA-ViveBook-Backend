@@ -13,12 +13,13 @@ import socialAuthService from '../services/socialAuth';
 
 //#region Autenticacion
 
-export const signup = async (req: Request, res: Response, next: NextFunction) => {
+const createLocalUser = async (req: Request, res: Response, rol: IUsuarioModel['rol']) => {
   try {
     const user: IUsuarioModel = new Usuario({
       name: req.body.name,
       email: req.body.email,
       password: req.body.password,
+      rol,
     });
 
     // Encriptamos la contraseña antes de guardar
@@ -43,6 +44,13 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
     return sendError(res, error, 'El correo electrónico ya está registrado', 400);
   }
 };
+
+export const signup = async (req: Request, res: Response, next: NextFunction) =>
+  createLocalUser(req, res, 'User');
+
+// Temporal: permite que el BackOffice cree directamente cuentas administradoras.
+export const signupAdmin = async (req: Request, res: Response, next: NextFunction) =>
+  createLocalUser(req, res, 'Admin');
 
 export const signin = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -267,4 +275,4 @@ export const getProfileLibros = async (req: Request, res: Response, next: NextFu
 
 //#endregion Autenticacion
 
-export default { signup, signin, profile, socialLogin, getProfileLibros };
+export default { signup, signupAdmin, signin, profile, socialLogin, getProfileLibros };

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { ApiError, sendError } from '../library/ApiResponse';
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   const userRol = req.userRol;
@@ -6,7 +7,10 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (userRol === 'Admin') {
     next();
   } else {
-    res.status(403).json({ message: 'Acceso denegado: Se requieren permisos de Administrador' });
+    return sendError(
+      res,
+      new ApiError(403, 'Acceso denegado: se requieren permisos de administrador', 'FORBIDDEN'),
+    );
   }
 };
 
@@ -18,8 +22,9 @@ export const isSelfOrAdmin = (req: Request, res: Response, next: NextFunction) =
   if (userRol === 'Admin' || (userId && userId === targetId)) {
     next();
   } else {
-    res
-      .status(403)
-      .json({ message: 'Acceso denegado: No tienes permiso para realizar esta acción' });
+    return sendError(
+      res,
+      new ApiError(403, 'No tienes permiso para realizar esta acción', 'FORBIDDEN'),
+    );
   }
 };

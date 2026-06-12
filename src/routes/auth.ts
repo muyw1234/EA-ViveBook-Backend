@@ -166,6 +166,41 @@ router.post('/signup', ValidateJoi(Schemas.usuario.create), Auth.signup);
 
 /**
  * @openapi
+ * /auth/admin-signup:
+ *   post:
+ *     summary: Registro temporal de administrador desde el BackOffice
+ *     description: Crea directamente un usuario con rol Admin. Endpoint temporal.
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Administrador ViveBook
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: admin@vivebook.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
+ *     responses:
+ *       201:
+ *         description: Administrador registrado correctamente
+ *       400:
+ *         description: Datos inválidos o correo ya registrado
+ */
+router.post('/admin-signup', ValidateJoi(Schemas.usuario.create), Auth.signupAdmin);
+
+/**
+ * @openapi
  * /auth/profile:
  *   get:
  *     summary: Obtiene el perfil del usuario autenticado
