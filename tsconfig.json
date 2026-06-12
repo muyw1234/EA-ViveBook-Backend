@@ -1,19 +1,14 @@
 {
   "compilerOptions": {
     "target": "es2016",
+    "lib": ["ES2022"],
     "module": "commonjs",
     "outDir": "./build",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "typeRoots": [
-      "./src/@types",
-      "./node_modules/@types/express"
-    ]
+    "typeRoots": ["./src/@types", "./node_modules/@types/express"]
   },
-  "include": [
-    "src/**/*",
-    "src/models/.ts"
-  ]
+  "include": ["src/**/*", "src/models/.ts"]
 }

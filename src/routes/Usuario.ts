@@ -241,7 +241,9 @@ router.get('/search', controller.searchUsuarioByName);
  *       404:
  *         description: Usuario no encontrado
  */
-router.get('/:usuarioId', TokenValidation, controller.getUsuario);
+router.get('/favoritos', TokenValidation, controller.getFavoritos);
+router.get('/favoritos/:libroId', TokenValidation, controller.checkFavorito);
+router.put('/favoritos/:libroId', TokenValidation, controller.toggleFavorito);
 
 /**
  * @openapi
@@ -265,6 +267,8 @@ router.get('/:usuarioId', TokenValidation, controller.getUsuario);
  *         description: Usuario no encontrado
  */
 router.get('/:usuarioId/followers', TokenValidation, controller.getFollowers);
+
+router.get('/:usuarioId', TokenValidation, controller.getUsuario);
 
 /**
  * @openapi
@@ -359,7 +363,13 @@ router.get('/', TokenValidation, controller.getAllUsuarios_NOT_Deleted);
  *       422:
  *         description: Error de validación en los datos enviados
  */
-router.put('/:usuarioId', TokenValidation, isSelfOrAdmin, ValidateJoi(Schemas.usuario.update), controller.updateUsuario);
+router.put(
+  '/:usuarioId',
+  TokenValidation,
+  isSelfOrAdmin,
+  ValidateJoi(Schemas.usuario.update),
+  controller.updateUsuario,
+);
 
 /**
  * @openapi
@@ -415,7 +425,12 @@ router.delete('/:usuarioId', TokenValidation, isSelfOrAdmin, controller.deleteUs
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/permanent/:usuarioId', TokenValidation, isSelfOrAdmin, controller.permanentDeleteUsuario);
+router.delete(
+  '/permanent/:usuarioId',
+  TokenValidation,
+  isSelfOrAdmin,
+  controller.permanentDeleteUsuario,
+);
 
 /**
  * @openapi

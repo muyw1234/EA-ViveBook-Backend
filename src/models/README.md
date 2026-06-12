@@ -37,53 +37,52 @@ Book --> Author
 
 ```
 
-
 @startuml
 skinparam classAttributeIconSize 0
 
 class Usuario {
-  +id : ObjectId
-  +posts : ObjectId[]
++id : ObjectId
++posts : ObjectId[]
 }
 
 class Post {
-  +id : ObjectId
-  +usuarioId : ObjectId
-  +libroId : ObjectId
-  +estado : EstadoPost
-  +venta : boolean
-  +precio : decimal
-  +descripcion : string
-  +fechaCreacion : Date
++id : ObjectId
++usuarioId : ObjectId
++libroId : ObjectId
++estado : EstadoPost
++venta : boolean
++precio : decimal
++descripcion : string
++fechaCreacion : Date
 }
 
 class Libro {
-  +id : ObjectId
-  +titulo : string
-  +isbn : string
-  +genero : string
-  +editorial : string
-  +anioPublicacion : int
-  +idioma : string
-  +numeroPaginas : int
-  +autores : ObjectId[]
++id : ObjectId
++titulo : string
++isbn : string
++genero : string
++editorial : string
++anioPublicacion : int
++idioma : string
++numeroPaginas : int
++autores : ObjectId[]
 }
 
 class Autor {
-  +id : ObjectId
-  +nombre : string
++id : ObjectId
++nombre : string
 }
 
 enum EstadoPost {
-  BORRADOR
-  PUBLICADO
-  PAUSADO
-  VENDIDO
-  ELIMINADO
+BORRADOR
+PUBLICADO
+PAUSADO
+VENDIDO
+ELIMINADO
 }
 
-Usuario "1" --> "0..*" Post : tiene
-Post "0..*" --> "1" Usuario : pertenece a
-Post "0..*" --> "1" Libro : referencia
-Libro "1" --> "0..*" Autor : escrito por
+Usuario "1" --> "0.._" Post : tiene
+Post "0.._" --> "1" Usuario : pertenece a
+Post "0.._" --> "1" Libro : referencia
+Libro "1" --> "0.._" Autor : escrito por
 @enduml

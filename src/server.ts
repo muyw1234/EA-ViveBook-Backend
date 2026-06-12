@@ -15,78 +15,84 @@ import chatRoutes from './routes/Chat';
 import mensajeRoutes from './routes/Mensaje';
 import authRoutes from './routes/auth';
 import postRoutes from './routes/Post';
+import matomoRoute from './routes/Matomo';
 import valoracionRoutes from './routes/Valoracion';
 import imageRoutes from './routes/Image';
+import retosRoutes from './routes/Retos';
+import reservaRoutes from './routes/Reserva';
+import messageRequestRoutes from './routes/MessageRequest';
+import recomendacionRoutes from './routes/Recomendacion';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
 import { ensureGlobalChat } from './library/ChatUtils';
+import { inicializarRetos } from './services/Retos';
 
 const router = express();
 
-/** Connect to Mongo */
 mongoose
-    .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
-    .then(() => {
-        Logging.info('Mongo connected successfully.');
-        ensureGlobalChat();
-        StartServer();
-    })
-    .catch((error) => Logging.error(error));
+  .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
+  .then(async () => {
+    Logging.info('Mongo connected successfully.');
+    await inicializarRetos();
+    Logging.info('Retos inicializados correctamente.');
+    ensureGlobalChat();
+    StartServer();
+  })
+  .catch((error) => Logging.error(error));
 
-/** Only Start Server if Mongoose Connects */
 const StartServer = () => {
-    /** Log the request */
-    router.use(pinoHttp({ logger: Logging.logger }));
+  router.use(pinoHttp({ logger: Logging.logger }));
 
-    router.use(express.urlencoded({ extended: true }));
-    router.use(express.json());
+  router.use(express.urlencoded({ extended: true }));
+  router.use(express.json());
 
-    /** Rules of our API */
-    router.use(cors());
+  router.use(cors());
 
-    /** Swagger */
-    router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-    /** Routes */
-    router.use('/usuarios', usuarioRoutes);
-    router.use('/librerias', libreriaRoutes);
-    router.use('/libros', libroRoutes);
-    router.use('/autores', autorRoutes);
-    router.use('/eventos', eventoRoutes);
-    router.use('/chats', chatRoutes);
-    router.use('/mensajes', mensajeRoutes);
-    router.use('/auth', authRoutes);
-    router.use('/posts', postRoutes);
-    router.use('/valoraciones', valoracionRoutes);
-    router.use('/image', imageRoutes);
+  router.use('/usuarios', usuarioRoutes);
+  router.use('/librerias', libreriaRoutes);
+  router.use('/libros', libroRoutes);
+  router.use('/autores', autorRoutes);
+  router.use('/eventos', eventoRoutes);
+  router.use('/chats', chatRoutes);
+  router.use('/mensajes', mensajeRoutes);
+  router.use('/auth', authRoutes);
+  router.use('/posts', postRoutes);
+  router.use('/valoraciones', valoracionRoutes);
+  router.use('/image', imageRoutes);
+  router.use('/matomo', matomoRoute);
+  router.use('/retos', retosRoutes);
+  router.use('/reservas', reservaRoutes);
+  router.use('/message-requests', messageRequestRoutes);
+  router.use('/recomendaciones', recomendacionRoutes);
 
-    /** Healthcheck */
-    router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
+  router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 
-    /** Error handling */
-    router.use((req, res, next) => {
-        const error = new Error('Not found');
+  router.use((req, res, next) => {
+    const error = new Error('Not found');
 
-        Logging.error(error);
+    Logging.error(error);
 
-        res.status(404).json({
-            message: error.message
-        });
+    res.status(404).json({
+      message: error.message,
     });
+  });
 
-    const httpServer = http.createServer(router);
-    const io = new Server(httpServer, {
-        cors: {
-            origin: '*',
-            methods: ['GET', 'POST']
-        }
-    });
+  const httpServer = http.createServer(router);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST'],
+    },
+  });
 
-    socketHandler(io);
+  router.set('io', io);
+  socketHandler(io);
 
-    httpServer.listen(config.server.port, () => {
-        Logging.info(`Server is running on port ${config.server.port}`);
-        Logging.info(`Access Swagger at http://localhost:${config.server.port}/swagger`);
-    });
+  httpServer.listen(config.server.port, () => {
+    Logging.info(`Server is running on port ${config.server.port}`);
+    Logging.info(`Access Swagger at http://localhost:${config.server.port}/swagger`);
+  });
 };
