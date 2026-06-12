@@ -128,10 +128,28 @@ const isFavorito = async (usuarioId: string, libroId: string): Promise<boolean> 
   return usuario.favoritos.some((id: any) => id.toString() === libroId);
 };
 
-async function searchUsuarioByName(term: string, page = 1, limit = 10) {
-  return await Usuario.find({ $text: { $search: term }, IsDeleted: false })
-    .limit(limit)
-    .skip((page - 1) * limit);
+async function searchUsuarioByName(
+  term: string,
+  page = 1,
+  limit = 10,
+): Promise<PaginatedResult<IUsuarioModel>> {
+  const filter = { $text: { $search: term }, IsDeleted: false };
+  const [data, total] = await Promise.all([
+    Usuario.find(filter)
+      .limit(limit)
+      .skip((page - 1) * limit),
+    Usuario.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 export default {

@@ -5,6 +5,8 @@ import Logging from '../library/Logging';
 import { getPaginationParams } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
+import { sendPushNotification } from '../services/NotificationService';
+import Libro from '../models/Libro';
 
 const createLibro = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -26,6 +28,40 @@ const createLibro = async (req: Request, res: Response, next: NextFunction) => {
       await actualizarProgresoRetos(userId, 'SUBIR_LIBROS');
 
       Logging.info(`Book ${libroId} linked to user ${userId}`);
+
+      // Send push notification to subscribers
+      try {
+        const publisher = await Usuario.findById(userId);
+        if (publisher) {
+          const subscribers = await Usuario.find({
+            notificationUsersEnabled: userId,
+          });
+
+          for (const subscriber of subscribers) {
+            if (subscriber._id.toString() !== userId.toString()) {
+              const body =
+                savedLibro.type === 'VENTA'
+                  ? `${publisher.name} ha publicado un nuevo libro en venta`
+                  : `${publisher.name} ha publicado un nuevo libro en alquiler`;
+
+              await sendPushNotification({
+                recipient: subscriber,
+                title: 'Nueva publicación',
+                body,
+                data: {
+                  type: 'user_new_book',
+                  actorId: userId,
+                  bookId: libroId.toString(),
+                  mode: savedLibro.type === 'VENTA' ? 'venta' : 'alquiler',
+                  targetUserId: subscriber._id.toString(),
+                },
+              });
+            }
+          }
+        }
+      } catch (pushErr: any) {
+        Logging.error(`Error sending push notifications for new book: ${pushErr.message}`);
+      }
     } else {
       Logging.warning('Book created but could not link to user (savedLibro or userId missing)');
     }
@@ -68,7 +104,22 @@ const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextF
   try {
     const { page, limit } = getPaginationParams(req);
     const userId = req.userId;
-    const libros = await LibroService.getAllLibros_NOT_Deleted(page, limit, userId);
+
+    const extraFilters: any = {};
+    if (req.query.type) {
+      extraFilters.type = req.query.type;
+    }
+    if (req.query.categoria) {
+      extraFilters.categoria = req.query.categoria;
+    }
+    if (req.query.maxPrice) {
+      const maxP = parseFloat(req.query.maxPrice as string);
+      if (!isNaN(maxP)) {
+        extraFilters.precio = { $lte: maxP };
+      }
+    }
+
+    const libros = await LibroService.getAllLibros_NOT_Deleted(page, limit, userId, extraFilters);
 
     return sendSuccess(res, libros, 'Libros activos obtenidos con éxito');
   } catch (error) {
@@ -79,9 +130,10 @@ const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextF
 const getLibrosByType = async (req: Request, res: Response, next: NextFunction) => {
   const type = req.params.type;
   const userId = req.userId;
+  const { page, limit } = getPaginationParams(req);
 
   try {
-    const libros = await LibroService.getLibrosByType(type, userId);
+    const libros = await LibroService.getLibrosByType(type, page, limit, userId);
 
     return sendSuccess(res, libros, `Libros de tipo '${type}' obtenidos con éxito`);
   } catch (error) {
@@ -162,12 +214,26 @@ async function searchLibroByTitle(req: Request, res: Response, next: NextFunctio
   const term: string = req.query.term as string;
   const userId = req.userId;
 
+  const extraFilters: any = {};
+  if (req.query.type) {
+    extraFilters.type = req.query.type;
+  }
+  if (req.query.categoria) {
+    extraFilters.categoria = req.query.categoria;
+  }
+  if (req.query.maxPrice) {
+    const maxP = parseFloat(req.query.maxPrice as string);
+    if (!isNaN(maxP)) {
+      extraFilters.precio = { $lte: maxP };
+    }
+  }
+
   Logging.info(`Searching the term: ${term} for user: ${userId || 'anonymous'}`);
 
   try {
-    const libros = await LibroService.searchLibroByTitle(term, page, limit, userId);
+    const result = await LibroService.searchLibroByTitle(term, page, limit, userId, extraFilters);
 
-    if (libros.length === 0) {
+    if (result.data.length === 0) {
       return sendError(
         res,
         `No se encontraron coincidencias para el término: ${term}`,
@@ -176,7 +242,7 @@ async function searchLibroByTitle(req: Request, res: Response, next: NextFunctio
       );
     }
 
-    return sendSuccess(res, libros, 'Búsqueda procesada con resultados');
+    return sendSuccess(res, result, 'Búsqueda procesada con resultados');
   } catch (error) {
     return sendError(res, error, 'Error al procesar la búsqueda por título');
   }
@@ -215,10 +281,35 @@ const rentLibro = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   try {
+    const libro = await Libro.findById(libroId);
+    if (!libro) {
+      return res.status(404).json({ message: 'Libro no encontrado' });
+    }
+
     const success = await LibroService.rentLibro(libroId, userId);
 
     if (success) {
       await actualizarProgresoRetos(userId, 'ALQUILAR_LIBROS');
+
+      // Send push notification to the owner if not self
+      if (libro.owner && libro.owner.toString() !== userId) {
+        const actorUser = await Usuario.findById(userId);
+        const recipient = await Usuario.findById(libro.owner);
+
+        if (actorUser && recipient) {
+          await sendPushNotification({
+            recipient,
+            title: 'Nuevo alquiler',
+            body: `${actorUser.name} ha alquilado tu libro`,
+            data: {
+              type: 'book_rented',
+              actorId: userId,
+              targetId: libroId,
+              bookId: libroId,
+            },
+          });
+        }
+      }
 
       return res.status(200).json({ message: 'Libro alquilado con éxito' });
     }

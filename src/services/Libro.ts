@@ -82,9 +82,10 @@ export async function getAllLibros_NOT_Deleted(
   page = 1,
   limit = 10,
   excludeOwnerId?: string,
+  extraFilters: any = {},
 ): Promise<PaginatedResult<ILibro>> {
   const pagination = getPagination(page, limit);
-  const filter: any = { IsDeleted: false };
+  const filter: any = { IsDeleted: false, ...extraFilters };
 
   if (excludeOwnerId && mongoose.Types.ObjectId.isValid(excludeOwnerId)) {
     filter.owner = { $ne: new mongoose.Types.ObjectId(excludeOwnerId) };
@@ -113,15 +114,36 @@ export async function getAllLibros_NOT_Deleted(
 
 export async function getLibrosByType(
   type: string,
+  page = 1,
+  limit = 10,
   excludeOwnerId?: string,
-): Promise<ILibro[] | []> {
+): Promise<PaginatedResult<ILibro>> {
+  const pagination = getPagination(page, limit);
   const filter: any = { type: type, IsDeleted: false };
 
   if (excludeOwnerId && mongoose.Types.ObjectId.isValid(excludeOwnerId)) {
     filter.owner = { $ne: new mongoose.Types.ObjectId(excludeOwnerId) };
   }
 
-  return await Libro.find(filter).populate('authors', 'fullName').populate('owner', 'name');
+  const [data, total] = await Promise.all([
+    Libro.find(filter)
+      .sort({ _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('authors', 'fullName')
+      .populate('owner', 'name'),
+    Libro.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
 }
 
 export async function updateLibro(id: string, data: ILibro): Promise<ILibro | null> {
@@ -145,16 +167,32 @@ async function searchLibroByTitle(
   page = 1,
   limit = 10,
   excludeOwnerId?: string,
-): Promise<ILibroModel[] | []> {
-  const filter: any = { $text: { $search: term } };
+  extraFilters: any = {},
+): Promise<PaginatedResult<ILibroModel>> {
+  const filter: any = { $text: { $search: term }, ...extraFilters };
 
   if (excludeOwnerId && mongoose.Types.ObjectId.isValid(excludeOwnerId)) {
     filter.owner = { $ne: new mongoose.Types.ObjectId(excludeOwnerId) };
   }
 
-  return await Libro.find(filter)
-    .limit(limit)
-    .skip((page - 1) * limit);
+  const [data, total] = await Promise.all([
+    Libro.find(filter)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('authors', 'fullName')
+      .populate('owner', 'name'),
+    Libro.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 
 export async function buyLibro(libroId: string, userId: string): Promise<boolean> {

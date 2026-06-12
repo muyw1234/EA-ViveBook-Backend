@@ -328,6 +328,21 @@ router.get('/:usuarioId', TokenValidation, controller.getUsuario);
  */
 router.get('/', TokenValidation, controller.getAllUsuarios_NOT_Deleted);
 
+router.post('/:usuarioId/notifications/enable', TokenValidation, controller.enableNotifications);
+router.delete(
+  '/:usuarioId/notifications/disable',
+  TokenValidation,
+  controller.disableNotifications,
+);
+router.get('/:usuarioId/notifications/status', TokenValidation, controller.getNotificationStatus);
+
+router.put(
+  '/push-token',
+  TokenValidation,
+  ValidateJoi(Schemas.usuario.updatePushToken),
+  controller.updatePushToken,
+);
+
 /**
  * @openapi
  * /usuarios/{usuarioId}:
