@@ -100,10 +100,22 @@ const updateUsuario = async (req: Request, res: Response, next: NextFunction) =>
       ? (usuarioAntes as any).followingUsers.map((id: any) => id.toString())
       : [];
 
-    const updatedUsuario = await UsuarioService.updateUsuario(usuarioId, req.body);
+    // 1. Se ejecuta la actualización base en el servicio
+    const updatedUsuarioRaw = await UsuarioService.updateUsuario(usuarioId, req.body);
+
+    if (!updatedUsuarioRaw) {
+      return sendError(res, 'No se encontró el usuario para actualizar', 'Not Found', 404);
+    }
+
+   
+    const updatedUsuario = await Usuario.findById(updatedUsuarioRaw._id)
+      .populate('libros', 'title')
+      .populate('wishlist')
+      .populate('favoriteBooks')
+      .populate('eventos'); 
 
     if (!updatedUsuario) {
-      return sendError(res, 'No se encontró el usuario para actualizar', 'Not Found', 404);
+      return sendError(res, 'No se encontró el usuario actualizado', 'Not Found', 404);
     }
 
     const followingDespues = Array.isArray((updatedUsuario as any).followingUsers)

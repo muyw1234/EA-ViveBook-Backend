@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Evento, { IEventoModel, IEvento } from '../models/Evento';
 import { getPagination, PaginatedResult } from './Pagination';
+import Usuario from '../models/Usuario';
 
 const createEvento = async (data: Partial<IEvento>): Promise<IEventoModel> => {
   const evento = new Evento({
@@ -79,20 +80,23 @@ const participarEvento = async (
   eventoId: string,
   usuarioId: string,
 ): Promise<IEventoModel | null> => {
+  await Usuario.findByIdAndUpdate(usuarioId, { $addToSet: { eventos: eventoId } });
+
   return await Evento.findByIdAndUpdate(
     eventoId,
     { $addToSet: { participant: usuarioId } },
     { new: true },
-  );
+  ).populate('participant', 'name email avatar');
 };
 
 const leaveEvento = async (eventoId: string, usuarioId: string): Promise<IEventoModel | null> => {
-  const evento = await Evento.findByIdAndUpdate(
+  await Usuario.findByIdAndUpdate(usuarioId, { $pull: { eventos: eventoId } });
+
+  return await Evento.findByIdAndUpdate(
     eventoId,
     { $pull: { participant: usuarioId } },
     { new: true },
-  ).populate('participant', 'name email');
-  return evento;
+  ).populate('participant', 'name email avatar');
 };
 
 export default {

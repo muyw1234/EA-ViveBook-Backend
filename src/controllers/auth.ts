@@ -91,7 +91,8 @@ export const profile = async (req: Request, res: Response, next: NextFunction) =
       })
       .populate('followingUsers', 'name email')
       .populate('wishlist')
-      .populate('favoriteBooks');
+      .populate('favoriteBooks')
+      .populate('eventos', 'title');
 
     if (!usuario) {
       Logging.warning(`Profile requested for non-existent user ID: ${req.userId}`);
@@ -234,7 +235,7 @@ export const getProfileLibros = async (req: Request, res: Response, next: NextFu
         query.populate('owner', '_id name');
       }
       const fetchedLibros = await query;
-      
+
       // Map back to the original order of paginatedIds
       const libroMap = new Map(fetchedLibros.map((b) => [b._id.toString(), b]));
       libros = paginatedIds.map((id) => libroMap.get(id.toString())).filter(Boolean);
@@ -244,17 +245,21 @@ export const getProfileLibros = async (req: Request, res: Response, next: NextFu
       uploaded: usuario.libros ? usuario.libros.length : 0,
       bought: usuario.boughtLibros ? usuario.boughtLibros.length : 0,
       rented: usuario.rentedLibros ? usuario.rentedLibros.length : 0,
-      wishlist: usuario.wishlist ? usuario.wishlist.length : 0
+      wishlist: usuario.wishlist ? usuario.wishlist.length : 0,
     };
 
-    return sendSuccess(res, {
-      libros,
-      page,
-      limit,
-      total,
-      totalPages,
-      counts
-    }, 'Libros de biblioteca obtenidos con éxito');
+    return sendSuccess(
+      res,
+      {
+        libros,
+        page,
+        limit,
+        total,
+        totalPages,
+        counts,
+      },
+      'Libros de biblioteca obtenidos con éxito',
+    );
   } catch (error: any) {
     Logging.error(`Error in getProfileLibros controller: ${error}`);
     return sendError(res, error, 'Error al obtener los libros del perfil', 500);

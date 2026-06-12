@@ -165,8 +165,8 @@ const participarEvento = async (req: Request, res: Response, next: NextFunction)
 
     await actualizarProgresoRetos(usuarioId, 'ASISTIR_EVENTOS');
 
-    // Send push notification to event creator if new participant and not self
-    if (!isAlreadyParticipating && evento.creator && evento.creator.toString() !== usuarioId) {
+    const creatorIdStr = evento.creator ? evento.creator.toString() : '';
+    if (!isAlreadyParticipating && creatorIdStr && creatorIdStr !== usuarioId) {
       const actorUser = await Usuario.findById(usuarioId);
       const recipient = await Usuario.findById(evento.creator);
 
@@ -199,10 +199,15 @@ const leaveEvento = async (req: Request, res: Response, next: NextFunction) => {
     const evento = await EventoService.leaveEvento(eventoId, usuarioId);
 
     if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
+      return sendError(
+        res,
+        'No se encontró el evento para cancelar participación',
+        'Not Found',
+        404,
+      );
     }
 
-    return res.status(200).json({ success: true, data: evento });
+    return sendSuccess(res, evento, 'Has cancelado tu participación con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al intentar salir del evento');
   }

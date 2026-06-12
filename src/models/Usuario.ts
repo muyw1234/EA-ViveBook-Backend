@@ -20,6 +20,7 @@ export interface IUsuario {
   followingUsers?: mongoose.Types.ObjectId[] | string[];
   favoritos: mongoose.Types.ObjectId[] | string[];
   description?: string;
+  eventos: mongoose.Types.ObjectId[] | string[];
   IsDeleted?: boolean;
   hasSeenTutorial?: boolean;
   expoPushToken?: string;
@@ -55,6 +56,7 @@ const UsuarioSchema: Schema = new Schema(
     followingUsers: [{ type: Schema.Types.ObjectId, required: false, ref: 'Usuario' }],
     favoritos: { type: [{ type: Schema.Types.ObjectId, ref: 'Libro' }], default: [] },
     description: { type: String, required: false, default: '' },
+    eventos: [{ type: Schema.Types.ObjectId, required: false, ref: 'Evento' }],
     IsDeleted: { type: Boolean, default: false },
     hasSeenTutorial: { type: Boolean, default: false },
     expoPushToken: { type: String, required: false },
