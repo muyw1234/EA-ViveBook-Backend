@@ -22,6 +22,15 @@ import retosRoutes from './routes/Retos';
 import reservaRoutes from './routes/Reserva';
 import messageRequestRoutes from './routes/MessageRequest';
 import recomendacionRoutes from './routes/Recomendacion';
+import adminAutorRoutes from './routes/admin/Autor';
+import adminLibroRoutes from './routes/admin/Libro';
+import adminUsuarioRoutes from './routes/admin/Usuario';
+import adminLibreriaRoutes from './routes/admin/Libreria';
+import adminPostRoutes from './routes/admin/Post';
+import adminEventoRoutes from './routes/admin/Evento';
+import adminValoracionRoutes from './routes/admin/Valoracion';
+import adminReservaRoutes from './routes/admin/Reserva';
+import adminRetoRoutes from './routes/admin/Reto';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
@@ -67,6 +76,15 @@ const StartServer = () => {
   router.use('/reservas', reservaRoutes);
   router.use('/message-requests', messageRequestRoutes);
   router.use('/recomendaciones', recomendacionRoutes);
+  router.use('/admin/autores', adminAutorRoutes);
+  router.use('/admin/libros', adminLibroRoutes);
+  router.use('/admin/usuarios', adminUsuarioRoutes);
+  router.use('/admin/librerias', adminLibreriaRoutes);
+  router.use('/admin/posts', adminPostRoutes);
+  router.use('/admin/eventos', adminEventoRoutes);
+  router.use('/admin/valoraciones', adminValoracionRoutes);
+  router.use('/admin/reservas', adminReservaRoutes);
+  router.use('/admin/retos', adminRetoRoutes);
 
   router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
 

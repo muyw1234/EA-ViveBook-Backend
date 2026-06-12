@@ -1,6 +1,17 @@
-import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import mongoose, { FilterQuery } from 'mongoose';
 import Usuario, { IUsuarioModel, IUsuario } from '../models/Usuario';
 import { getPagination, PaginatedResult } from './Pagination';
+
+export type AdminUsuarioQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  includeDeleted?: boolean;
+  rol?: IUsuario['rol'];
+};
+
+const adminUsuarioSelect = '-password -googleId -appleId -expoPushToken -notificationUsersEnabled';
 
 const createUsuario = async (data: Partial<IUsuario>): Promise<IUsuarioModel> => {
   const usuario = new Usuario({
@@ -71,6 +82,108 @@ const getAllUsuarios_NOT_Deleted = async (
     },
     data,
   };
+};
+
+const getAdminUsuarios = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  includeDeleted = true,
+  rol,
+}: AdminUsuarioQuery): Promise<PaginatedResult<IUsuarioModel>> => {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<IUsuarioModel> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeDeleted) {
+    filter.IsDeleted = false;
+  }
+
+  if (rol) {
+    filter.rol = rol;
+  }
+
+  if (normalizedSearch) {
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { name: { $regex: escapedSearch, $options: 'i' } },
+      { email: { $regex: escapedSearch, $options: 'i' } },
+      { description: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    Usuario.find(filter)
+      .select(adminUsuarioSelect)
+      .sort({ name: 1, email: 1, _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('libros', 'title'),
+    Usuario.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+};
+
+const getAdminUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> => {
+  return Usuario.findById(usuarioId).select(adminUsuarioSelect).populate('libros', 'title');
+};
+
+const createAdminUsuario = async (data: Partial<IUsuario>): Promise<IUsuarioModel | null> => {
+  const password = await bcrypt.hash(data.password as string, 10);
+  const usuario = await Usuario.create({
+    ...data,
+    email: data.email?.trim().toLowerCase(),
+    password,
+    authProvider: 'local',
+  });
+
+  return getAdminUsuario(usuario._id.toString());
+};
+
+const updateAdminUsuario = async (
+  usuarioId: string,
+  data: Partial<IUsuario>,
+): Promise<IUsuarioModel | null> => {
+  const updateData: Partial<IUsuario> = { ...data };
+
+  if (typeof updateData.email === 'string') {
+    updateData.email = updateData.email.trim().toLowerCase();
+  }
+
+  if (updateData.password) {
+    updateData.password = await bcrypt.hash(updateData.password, 10);
+  } else {
+    delete updateData.password;
+  }
+
+  const usuario = await Usuario.findByIdAndUpdate(usuarioId, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  return usuario ? getAdminUsuario(usuarioId) : null;
+};
+
+const setUsuarioDeleted = async (
+  usuarioId: string,
+  IsDeleted: boolean,
+): Promise<IUsuarioModel | null> => {
+  const usuario = await Usuario.findByIdAndUpdate(
+    usuarioId,
+    { IsDeleted },
+    { new: true, runValidators: true },
+  );
+
+  return usuario ? getAdminUsuario(usuarioId) : null;
 };
 
 const updateUsuario = async (
@@ -159,6 +272,11 @@ export default {
   getUsuarioByEmail,
   getAllUsuarios,
   getAllUsuarios_NOT_Deleted,
+  getAdminUsuarios,
+  getAdminUsuario,
+  createAdminUsuario,
+  updateAdminUsuario,
+  setUsuarioDeleted,
   updateUsuario,
   deleteUsuario,
   permanentDeleteUsuario,

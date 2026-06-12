@@ -1,10 +1,19 @@
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 import Libro, { ILibroModel, ILibro } from '../models/Libro';
 import Usuario from '../models/Usuario';
 import { callOpenLibraryBookApi } from './Util';
 import Logging from '../library/Logging';
 import Autor from './Autor';
 import { getPagination, PaginatedResult } from './Pagination';
+
+export type AdminLibroQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  includeDeleted?: boolean;
+  type?: ILibro['type'];
+  estado?: string;
+};
 
 export async function createLibro(data: Partial<ILibro>): Promise<ILibro | null> {
   const autores = [];
@@ -65,6 +74,63 @@ export async function getAllLibros(page = 1, limit = 10): Promise<PaginatedResul
       .populate('authors', 'fullName')
       .populate('owner', 'name'),
     Libro.countDocuments(),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+}
+
+export async function getAdminLibros({
+  page = 1,
+  limit = 10,
+  search = '',
+  includeDeleted = true,
+  type,
+  estado,
+}: AdminLibroQuery): Promise<PaginatedResult<ILibroModel>> {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<ILibroModel> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeDeleted) {
+    filter.IsDeleted = false;
+  }
+
+  if (type) {
+    filter.type = type;
+  }
+
+  if (estado) {
+    filter.estado = estado;
+  }
+
+  if (normalizedSearch) {
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { title: { $regex: escapedSearch, $options: 'i' } },
+      { isbn: { $regex: escapedSearch, $options: 'i' } },
+      { autor: { $regex: escapedSearch, $options: 'i' } },
+      { categoria: { $regex: escapedSearch, $options: 'i' } },
+      { estado: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    Libro.find(filter)
+      .sort({ title: 1, _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('authors', 'fullName')
+      .populate('owner', 'name email')
+      .populate('reservedBy', 'name email'),
+    Libro.countDocuments(filter),
   ]);
 
   return {
@@ -146,7 +212,7 @@ export async function getLibrosByType(
   };
 }
 
-export async function updateLibro(id: string, data: ILibro): Promise<ILibro | null> {
+export async function updateLibro(id: string, data: Partial<ILibro>): Promise<ILibro | null> {
   return await Libro.findByIdAndUpdate(id, data, { new: true });
 }
 
@@ -156,6 +222,10 @@ export async function deleteLibro(id: string): Promise<ILibro | null> {
 
 export async function restoreLibro(libroId: string): Promise<ILibro | null> {
   return await Libro.findByIdAndUpdate(libroId, { IsDeleted: false }, { new: true });
+}
+
+export async function setLibroDeleted(libroId: string, isDeleted: boolean): Promise<ILibro | null> {
+  return await Libro.findByIdAndUpdate(libroId, { IsDeleted: isDeleted }, { new: true });
 }
 
 export async function getLibroByIsbn(isbn: string): Promise<ILibroModel | null> {
@@ -272,11 +342,13 @@ export default {
   createLibroByIsbn,
   getLibro,
   getAllLibros,
+  getAdminLibros,
   getAllLibros_NOT_Deleted,
   getLibrosByType,
   updateLibro,
   deleteLibro,
   restoreLibro,
+  setLibroDeleted,
   getLibroByIsbn,
   searchLibroByTitle,
   buyLibro,

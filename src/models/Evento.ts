@@ -53,5 +53,6 @@ const EventoSchema: Schema = new Schema(
 );
 
 EventoSchema.index({ location: '2dsphere' });
+EventoSchema.index({ title: 'text', description: 'text', direccionExacta: 'text' });
 
 export default mongoose.model<IEventoModel>('Evento', EventoSchema);

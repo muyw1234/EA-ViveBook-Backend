@@ -8,6 +8,7 @@ export interface IValoracion {
   puntuacion: number;
   comentario?: string;
   reservationId?: mongoose.Types.ObjectId | string;
+  IsDeleted?: boolean;
 }
 
 export interface IValoracionModel extends IValoracion, Document {}
@@ -21,6 +22,7 @@ const ValoracionSchema: Schema = new Schema(
     puntuacion: { type: Number, required: true, min: 1, max: 5 },
     comentario: { type: String, required: false, default: '' },
     reservationId: { type: Schema.Types.ObjectId, ref: 'Reserva', required: false },
+    IsDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -31,5 +33,6 @@ const ValoracionSchema: Schema = new Schema(
 // Indexes to enforce single rating per transition
 ValoracionSchema.index({ usuarioAutor: 1, libro: 1, tipoOperacion: 1 }, { unique: true });
 ValoracionSchema.index({ usuarioAutor: 1, reservationId: 1 }, { unique: true, sparse: true });
+ValoracionSchema.index({ comentario: 'text' });
 
 export default mongoose.model<IValoracionModel>('Valoracion', ValoracionSchema);

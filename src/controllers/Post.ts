@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { IPost } from '../models/Post';
 import PostService from '../services/Post';
 import Logging from '../library/Logging';
-import { getPaginationParams } from './Pagination';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 
 async function createPost(req: Request, res: Response, next: NextFunction) {
@@ -63,6 +63,84 @@ async function readAllPost(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+async function readAdminPosts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const allowedStatuses = ['VENTA', 'ALQUILER', 'NO_DISPONIBLE'];
+    const status =
+      typeof req.query.status === 'string' && allowedStatuses.includes(req.query.status)
+        ? req.query.status
+        : undefined;
+    const posts = await PostService.getAdminPosts({
+      page,
+      limit,
+      search,
+      includeDeleted,
+      status,
+    });
+    return sendSuccess(res, posts, 'Listado administrativo de posts obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de posts');
+  }
+}
+
+async function createAdminPost(req: Request, res: Response, next: NextFunction) {
+  try {
+    const post = await PostService.createPost(req.body);
+    return sendSuccess(res, post, 'Post creado desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear el post desde el BackOffice');
+  }
+}
+
+async function readAdminPost(req: Request, res: Response, next: NextFunction) {
+  try {
+    const post = await PostService.getPostById(req.params.id);
+    if (!post) return sendError(res, 'El post solicitado no existe', 'Not Found', 404);
+    return sendSuccess(res, post, 'Post obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el post');
+  }
+}
+
+async function updateAdminPost(req: Request, res: Response, next: NextFunction) {
+  try {
+    const post = await PostService.updatePost(req.params.id, req.body);
+    if (!post) return sendError(res, 'No se encontró el post para actualizar', 'Not Found', 404);
+    return sendSuccess(res, post, 'Post actualizado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar el post');
+  }
+}
+
+async function deactivateAdminPost(req: Request, res: Response, next: NextFunction) {
+  try {
+    const post = await PostService.setPostDeleted(req.params.id, true);
+    if (!post) return sendError(res, 'No se encontró el post para desactivar', 'Not Found', 404);
+    return sendSuccess(res, post, 'Post desactivado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar el post');
+  }
+}
+
+async function setAdminPostStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const post = await PostService.setPostDeleted(req.params.id, req.body.IsDeleted);
+    if (!post) {
+      return sendError(res, 'No se encontró el post para cambiar su estado', 'Not Found', 404);
+    }
+    return sendSuccess(
+      res,
+      post,
+      post.IsDeleted ? 'Post desactivado con éxito' : 'Post activado con éxito',
+    );
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado del post');
+  }
+}
+
 async function updatePost(req: Request, res: Response, next: NextFunction) {
   try {
     const data = {
@@ -119,6 +197,12 @@ export default {
   createPostByIsbn,
   readPost,
   readAllPost,
+  readAdminPosts,
+  createAdminPost,
+  readAdminPost,
+  updateAdminPost,
+  deactivateAdminPost,
+  setAdminPostStatus,
   updatePost,
   deletePost,
   searchPostByTerm,

@@ -12,12 +12,14 @@ const LibreriaSchema: Schema = new Schema(
   {
     name: { type: String, required: true },
     address: { type: String, required: true },
-    isDeleted: { type: Boolean, default: false }, // Campo para soft delete
+    IsDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,
     versionKey: false,
   },
 );
+
+LibreriaSchema.index({ name: 'text', address: 'text' });
 
 export default mongoose.model<ILibreriaModel>('Libreria', LibreriaSchema);

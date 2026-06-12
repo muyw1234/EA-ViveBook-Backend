@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import EventoService from '../services/Evento';
-import { getPaginationParams } from './Pagination';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
 import { sendPushNotification } from '../services/NotificationService';
@@ -60,6 +60,88 @@ const getAllEventos = async (req: Request, res: Response, next: NextFunction) =>
     return sendSuccess(res, eventos, 'Listado de eventos obtenido con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al recuperar el listado de eventos');
+  }
+};
+
+const getAdminEventos = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const upcoming =
+      req.query.upcoming === 'true' ? true : req.query.upcoming === 'false' ? false : undefined;
+    const eventos = await EventoService.getAdminEventos({
+      page,
+      limit,
+      search,
+      includeDeleted,
+      upcoming,
+    });
+    return sendSuccess(res, eventos, 'Listado administrativo de eventos obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de eventos');
+  }
+};
+
+const createAdminEvento = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const evento = await EventoService.createEvento({
+      ...req.body,
+      createdDate: req.body.createdDate ?? new Date(),
+    });
+    return sendSuccess(res, evento, 'Evento creado desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear el evento desde el BackOffice');
+  }
+};
+
+const getAdminEvento = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const evento = await EventoService.getEvento(req.params.eventoId);
+    if (!evento) return sendError(res, 'El evento solicitado no existe', 'Not Found', 404);
+    return sendSuccess(res, evento, 'Evento obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el evento');
+  }
+};
+
+const updateAdminEvento = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const evento = await EventoService.updateEvento(req.params.eventoId, req.body);
+    if (!evento) {
+      return sendError(res, 'No se encontró el evento para actualizar', 'Not Found', 404);
+    }
+    return sendSuccess(res, evento, 'Evento actualizado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar el evento');
+  }
+};
+
+const deactivateAdminEvento = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const evento = await EventoService.setEventoDeleted(req.params.eventoId, true);
+    if (!evento) {
+      return sendError(res, 'No se encontró el evento para desactivar', 'Not Found', 404);
+    }
+    return sendSuccess(res, evento, 'Evento desactivado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar el evento');
+  }
+};
+
+const setAdminEventoStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const evento = await EventoService.setEventoDeleted(req.params.eventoId, req.body.IsDeleted);
+    if (!evento) {
+      return sendError(res, 'No se encontró el evento para cambiar su estado', 'Not Found', 404);
+    }
+    return sendSuccess(
+      res,
+      evento,
+      evento.IsDeleted ? 'Evento desactivado con éxito' : 'Evento activado con éxito',
+    );
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado del evento');
   }
 };
 
@@ -212,6 +294,12 @@ export default {
   createEvento,
   getEvento,
   getAllEventos,
+  getAdminEventos,
+  createAdminEvento,
+  getAdminEvento,
+  updateAdminEvento,
+  deactivateAdminEvento,
+  setAdminEventoStatus,
   getEventosByExactLocation,
   updateEvento,
   deleteEvento,

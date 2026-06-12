@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import AutorService from '../services/Autor';
-import { getPaginationParams } from './Pagination';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 
 // Maneja la creación de un nuevo autor
@@ -50,6 +50,24 @@ const getAllAutores_NOT_Deleted = async (req: Request, res: Response, next: Next
   }
 };
 
+const getAdminAutores = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const autores = await AutorService.getAdminAutores({
+      page,
+      limit,
+      search,
+      includeDeleted,
+    });
+
+    return sendSuccess(res, autores, 'Listado administrativo de autores obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de autores');
+  }
+};
+
 // Actualiza los datos de un autor existente
 const updateAutor = async (req: Request, res: Response, next: NextFunction) => {
   const autorId = req.params.autorId;
@@ -91,12 +109,44 @@ const restoreAutor = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+const deactivateAutor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const autor = await AutorService.setAutorDeleted(req.params.autorId, true);
+
+    if (!autor) {
+      return sendError(res, 'No se encontró el autor para desactivar', 'Not Found', 404);
+    }
+
+    return sendSuccess(res, autor, 'Autor desactivado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar el autor');
+  }
+};
+
+const setAutorStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const autor = await AutorService.setAutorDeleted(req.params.autorId, req.body.IsDeleted);
+
+    if (!autor) {
+      return sendError(res, 'No se encontró el autor para cambiar su estado', 'Not Found', 404);
+    }
+
+    const message = autor.IsDeleted ? 'Autor desactivado con éxito' : 'Autor activado con éxito';
+    return sendSuccess(res, autor, message);
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado del autor');
+  }
+};
+
 export default {
   createAutor,
   getAutor,
   getAllAutores,
   getAllAutores_NOT_Deleted,
+  getAdminAutores,
   updateAutor,
   deleteAutor,
   restoreAutor,
+  deactivateAutor,
+  setAutorStatus,
 };

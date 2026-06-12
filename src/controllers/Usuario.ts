@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import UsuarioService from '../services/Usuario';
 import Usuario from '../models/Usuario';
-import { getPaginationParams } from './Pagination';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
 import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
@@ -79,6 +79,97 @@ const getAllUsuarios_NOT_Deleted = async (req: Request, res: Response, next: Nex
     return sendSuccess(res, usuarios, 'Listado de usuarios activos obtenido con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al recuperar los usuarios activos');
+  }
+};
+
+const getAdminUsuarios = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const rol = req.query.rol === 'Admin' || req.query.rol === 'User' ? req.query.rol : undefined;
+    const usuarios = await UsuarioService.getAdminUsuarios({
+      page,
+      limit,
+      search,
+      includeDeleted,
+      rol,
+    });
+
+    return sendSuccess(res, usuarios, 'Listado administrativo de usuarios obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de usuarios');
+  }
+};
+
+const getAdminUsuario = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = await UsuarioService.getAdminUsuario(req.params.usuarioId);
+
+    if (!usuario) {
+      return sendError(res, 'El usuario solicitado no existe', 'Not Found', 404);
+    }
+
+    return sendSuccess(res, usuario, 'Usuario obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el usuario');
+  }
+};
+
+const createAdminUsuario = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = await UsuarioService.createAdminUsuario(req.body);
+    return sendSuccess(res, usuario, 'Usuario creado desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear el usuario desde el BackOffice');
+  }
+};
+
+const updateAdminUsuario = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = await UsuarioService.updateAdminUsuario(req.params.usuarioId, req.body);
+
+    if (!usuario) {
+      return sendError(res, 'No se encontró el usuario para actualizar', 'Not Found', 404);
+    }
+
+    return sendSuccess(res, usuario, 'Usuario actualizado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar el usuario');
+  }
+};
+
+const deactivateAdminUsuario = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = await UsuarioService.setUsuarioDeleted(req.params.usuarioId, true);
+
+    if (!usuario) {
+      return sendError(res, 'No se encontró el usuario para desactivar', 'Not Found', 404);
+    }
+
+    return sendSuccess(res, usuario, 'Usuario desactivado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar el usuario');
+  }
+};
+
+const setAdminUsuarioStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = await UsuarioService.setUsuarioDeleted(
+      req.params.usuarioId,
+      req.body.IsDeleted,
+    );
+
+    if (!usuario) {
+      return sendError(res, 'No se encontró el usuario para cambiar su estado', 'Not Found', 404);
+    }
+
+    const message = usuario.IsDeleted
+      ? 'Usuario desactivado con éxito'
+      : 'Usuario activado con éxito';
+    return sendSuccess(res, usuario, message);
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado del usuario');
   }
 };
 
@@ -526,6 +617,12 @@ export default {
   getFollowers,
   getAllUsuarios,
   getAllUsuarios_NOT_Deleted,
+  getAdminUsuarios,
+  getAdminUsuario,
+  createAdminUsuario,
+  updateAdminUsuario,
+  deactivateAdminUsuario,
+  setAdminUsuarioStatus,
   updateUsuario,
   deleteUsuario,
   permanentDeleteUsuario,

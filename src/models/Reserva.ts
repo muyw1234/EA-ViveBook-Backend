@@ -8,6 +8,7 @@ export interface IReserva {
   fechaSolicitud: Date;
   fechaLimite?: Date;
   deletedBy?: Array<mongoose.Types.ObjectId | string>;
+  IsDeleted?: boolean;
 }
 
 export interface IReservaModel extends IReserva, Document {}
@@ -26,6 +27,7 @@ const ReservaSchema: Schema = new Schema(
     fechaSolicitud: { type: Date, default: Date.now, required: true },
     fechaLimite: { type: Date, required: false },
     deletedBy: [{ type: Schema.Types.ObjectId, ref: 'Usuario', default: [] }],
+    IsDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,

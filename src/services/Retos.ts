@@ -1,6 +1,15 @@
-import Reto, { TipoReto } from '../models/Reto';
+import { FilterQuery } from 'mongoose';
+import Reto, { IReto, IRetoModel, TipoReto } from '../models/Reto';
 import ProgresoReto from '../models/ProgresoReto';
-import { getPagination } from './Pagination';
+import { getPagination, PaginatedResult } from './Pagination';
+
+export type AdminRetoQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  includeInactive?: boolean;
+  type?: TipoReto;
+};
 
 const retosIniciales: {
   title: string;
@@ -119,12 +128,9 @@ const retosIniciales: {
 ];
 
 export const inicializarRetos = async () => {
-  for (const reto of retosIniciales) {
-    await Reto.findOneAndUpdate({ title: reto.title }, reto, {
-      upsert: true,
-      new: true,
-    });
-  }
+  const existingRetos = await Reto.countDocuments();
+  if (existingRetos > 0) return;
+  await Reto.insertMany(retosIniciales);
 };
 
 export const actualizarProgresoRetos = async (
@@ -228,3 +234,78 @@ export const obtenerMisRetos = async (usuarioId: string, page: number = 1, limit
     },
   };
 };
+
+export const getAdminRetos = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  includeInactive = true,
+  type,
+}: AdminRetoQuery): Promise<PaginatedResult<IRetoModel>> => {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<IRetoModel> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeInactive) filter.activo = true;
+  if (type) filter.type = type;
+  if (normalizedSearch) {
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { title: { $regex: escapedSearch, $options: 'i' } },
+      { description: { $regex: escapedSearch, $options: 'i' } },
+      { type: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    Reto.find(filter)
+      .sort({ activo: -1, type: 1, objetivo: 1, _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit),
+    Reto.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+};
+
+export const getAdminReto = async (id: string): Promise<IRetoModel | null> => Reto.findById(id);
+
+export const createAdminReto = async (data: Partial<IReto>): Promise<IRetoModel> =>
+  Reto.create(data);
+
+export const updateAdminReto = async (
+  id: string,
+  data: Partial<IReto>,
+): Promise<IRetoModel | null> => {
+  const reto = await Reto.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  });
+  if (!reto) return null;
+
+  if (data.objetivo !== undefined) {
+    const progresos = await ProgresoReto.find({ reto: id });
+    for (const progreso of progresos) {
+      progreso.objetivo = reto.objetivo;
+      progreso.progresoActual = Math.min(progreso.progresoActual, reto.objetivo);
+      progreso.completado = progreso.progresoActual >= reto.objetivo;
+      progreso.fechaCompletado = progreso.completado
+        ? (progreso.fechaCompletado ?? new Date())
+        : undefined;
+      await progreso.save();
+    }
+  }
+
+  return reto;
+};
+
+export const setRetoActivo = async (id: string, activo: boolean): Promise<IRetoModel | null> =>
+  updateAdminReto(id, { activo });

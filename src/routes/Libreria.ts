@@ -25,6 +25,10 @@ const router = express.Router();
  *         address:
  *           type: string
  *           example: "Calle Principal 123"
+ *         IsDeleted:
+ *           type: boolean
+ *           description: Indica si la librería está desactivada.
+ *           example: false
  *     LibreriaCreateUpdate:
  *       type: object
  *       required:
@@ -37,6 +41,9 @@ const router = express.Router();
  *         address:
  *           type: string
  *           example: "Calle Principal 123"
+ *         IsDeleted:
+ *           type: boolean
+ *           example: false
  */
 
 /**

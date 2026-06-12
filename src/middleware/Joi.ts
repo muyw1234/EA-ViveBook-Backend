@@ -10,6 +10,9 @@ import Logging from '../library/Logging';
 import { IAutor } from '../models/Autor';
 import { isBindingName } from 'typescript';
 import { IPost } from '../models/Post';
+import { IValoracion } from '../models/Valoracion';
+import { IReserva } from '../models/Reserva';
+import { IReto } from '../models/Reto';
 
 export const ValidateJoi = (schema: ObjectSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -117,6 +120,31 @@ export const Schemas = {
         )
         .optional(),
     }),
+    adminCreate: Joi.object<IUsuario>({
+      name: Joi.string().max(150).required(),
+      email: Joi.string().email().max(200).required(),
+      password: Joi.string().min(6).max(200).required(),
+      rol: Joi.string().valid('Admin', 'User').default('User'),
+      avatar: Joi.string().uri().allow('').optional(),
+      libros: Joi.array().items(Joi.string().regex(/^[0-9a-fA-F]{24}$/)),
+      description: Joi.string().allow('').optional(),
+      IsDeleted: Joi.boolean().optional(),
+      hasSeenTutorial: Joi.boolean().optional(),
+    }),
+    adminUpdate: Joi.object<IUsuario>({
+      name: Joi.string().max(150).optional(),
+      email: Joi.string().email().max(200).optional(),
+      password: Joi.string().min(6).max(200).allow('').optional(),
+      rol: Joi.string().valid('Admin', 'User').optional(),
+      avatar: Joi.string().uri().allow('', null).optional(),
+      libros: Joi.array().items(Joi.string().regex(/^[0-9a-fA-F]{24}$/)),
+      description: Joi.string().allow('').optional(),
+      IsDeleted: Joi.boolean().optional(),
+      hasSeenTutorial: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<IUsuario, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
+    }),
     updatePushToken: Joi.object({
       expoPushToken: Joi.string().required(),
     }),
@@ -130,16 +158,24 @@ export const Schemas = {
       fullName: Joi.string().optional(),
       IsDeleted: Joi.boolean().optional(),
     }),
+    status: Joi.object<Pick<IAutor, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
+    }),
   },
 
   libreria: {
     create: Joi.object<ILibreria>({
       name: Joi.string().required(),
       address: Joi.string().required(),
+      IsDeleted: Joi.boolean().optional(),
     }),
     update: Joi.object<ILibreria>({
-      name: Joi.string().required(),
-      address: Joi.string().required(),
+      name: Joi.string().optional(),
+      address: Joi.string().optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<ILibreria, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
     }),
   },
   libro: {
@@ -170,6 +206,55 @@ export const Schemas = {
       rentalStartDate: Joi.date().optional(),
       rentalEndDate: Joi.date().optional(),
       imageUrl: Joi.string().optional(),
+    }),
+    adminCreate: Joi.object<ILibro>({
+      isbn: Joi.string().required(),
+      title: Joi.string().required(),
+      autor: Joi.string().optional().allow(''),
+      categoria: Joi.string().optional().allow(''),
+      authors: Joi.array().items(Joi.string()),
+      type: Joi.string().valid('VENTA', 'ALQUILER').required(),
+      precio: Joi.number().min(0).required(),
+      estado: Joi.string().required(),
+      owner: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      IsDeleted: Joi.boolean().optional(),
+      rentalStartDate: Joi.date().optional(),
+      rentalEndDate: Joi.date().optional(),
+      imageUrl: Joi.string().uri().allow('').optional(),
+      isReserved: Joi.boolean().optional(),
+      reservedBy: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      reservationExpiry: Joi.date().optional(),
+    }),
+    adminUpdate: Joi.object<ILibro>({
+      isbn: Joi.string().optional(),
+      title: Joi.string().optional(),
+      autor: Joi.string().optional().allow(''),
+      categoria: Joi.string().optional().allow(''),
+      authors: Joi.array().items(Joi.string()),
+      type: Joi.string().valid('VENTA', 'ALQUILER').optional(),
+      precio: Joi.number().min(0).optional(),
+      estado: Joi.string().optional(),
+      owner: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .allow(null)
+        .optional(),
+      IsDeleted: Joi.boolean().optional(),
+      rentalStartDate: Joi.date().allow(null).optional(),
+      rentalEndDate: Joi.date().allow(null).optional(),
+      imageUrl: Joi.string().uri().allow('', null).optional(),
+      isReserved: Joi.boolean().optional(),
+      reservedBy: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .allow(null)
+        .optional(),
+      reservationExpiry: Joi.date().allow(null).optional(),
+    }),
+    status: Joi.object<Pick<ILibro, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
     }),
   },
   evento: {
@@ -203,6 +288,45 @@ export const Schemas = {
         coordinates: Joi.array().items(Joi.number()).length(2).required(),
       }).optional(),
       IsDeleted: Joi.boolean().optional(),
+    }),
+    adminCreate: Joi.object<IEvento>({
+      title: Joi.string().required(),
+      description: Joi.string().required(),
+      creator: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      participant: Joi.array()
+        .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+        .optional(),
+      eventDate: Joi.date().required(),
+      createdDate: Joi.date().optional(),
+      direccionExacta: Joi.string().required(),
+      location: Joi.object({
+        type: Joi.string().valid('Point').required(),
+        coordinates: Joi.array().items(Joi.number()).length(2).required(),
+      }).required(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    adminUpdate: Joi.object<IEvento>({
+      title: Joi.string().optional(),
+      description: Joi.string().optional(),
+      creator: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      participant: Joi.array()
+        .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+        .optional(),
+      eventDate: Joi.date().optional(),
+      createdDate: Joi.date().optional(),
+      direccionExacta: Joi.string().optional(),
+      location: Joi.object({
+        type: Joi.string().valid('Point').required(),
+        coordinates: Joi.array().items(Joi.number()).length(2).required(),
+      }).optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<IEvento, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
     }),
   },
   chat: {
@@ -246,6 +370,35 @@ export const Schemas = {
       bookId: Joi.string().optional(),
       price: Joi.number().optional(),
     }),
+    adminCreate: Joi.object<IPost>({
+      description: Joi.string().allow('').required(),
+      status: Joi.string().valid('VENTA', 'ALQUILER', 'NO_DISPONIBLE').required(),
+      imageUrl: Joi.string().uri().allow('').optional(),
+      IsDeleted: Joi.boolean().optional(),
+      ownerId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      bookId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      price: Joi.number().min(0).required(),
+    }),
+    adminUpdate: Joi.object<IPost>({
+      description: Joi.string().allow('').optional(),
+      status: Joi.string().valid('VENTA', 'ALQUILER', 'NO_DISPONIBLE').optional(),
+      imageUrl: Joi.string().uri().allow('', null).optional(),
+      IsDeleted: Joi.boolean().optional(),
+      ownerId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      bookId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      price: Joi.number().min(0).optional(),
+    }),
+    deletedStatus: Joi.object<Pick<IPost, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
+    }),
   },
   /*
         Viene del esquema del ejercicio
@@ -275,6 +428,47 @@ export const Schemas = {
         .regex(/^[0-9a-fA-F]{24}$/)
         .optional(),
     }),
+    adminCreate: Joi.object<IValoracion>({
+      usuarioAutor: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      usuarioValorado: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      libro: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER', 'RESERVA').required(),
+      puntuacion: Joi.number().integer().min(1).max(5).required(),
+      comentario: Joi.string().allow('').optional(),
+      reservationId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .allow('', null)
+        .optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    adminUpdate: Joi.object<IValoracion>({
+      usuarioAutor: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      usuarioValorado: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      libro: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      tipoOperacion: Joi.string().valid('VENTA', 'ALQUILER', 'RESERVA').optional(),
+      puntuacion: Joi.number().integer().min(1).max(5).optional(),
+      comentario: Joi.string().allow('').optional(),
+      reservationId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .allow('', null)
+        .optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<IValoracion, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
+    }),
   },
   reserva: {
     create: Joi.object({
@@ -284,6 +478,76 @@ export const Schemas = {
     }),
     aceptar: Joi.object({
       dias: Joi.number().min(1).optional(),
+    }),
+    adminCreate: Joi.object<IReserva>({
+      libro: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      usuarioSolicitante: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      propietario: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required(),
+      estado: Joi.string().valid('PENDIENTE', 'ACEPTADA', 'RECHAZADA').required(),
+      fechaSolicitud: Joi.date().optional(),
+      fechaLimite: Joi.date().allow(null).optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    adminUpdate: Joi.object<IReserva>({
+      libro: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      usuarioSolicitante: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      propietario: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .optional(),
+      estado: Joi.string().valid('PENDIENTE', 'ACEPTADA', 'RECHAZADA').optional(),
+      fechaSolicitud: Joi.date().optional(),
+      fechaLimite: Joi.date().allow(null).optional(),
+      IsDeleted: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<IReserva, 'IsDeleted'>>({
+      IsDeleted: Joi.boolean().required(),
+    }),
+  },
+  reto: {
+    adminCreate: Joi.object<IReto>({
+      title: Joi.string().trim().max(150).required(),
+      description: Joi.string().trim().max(1000).required(),
+      type: Joi.string()
+        .valid(
+          'COMPRAR_LIBROS',
+          'ALQUILAR_LIBROS',
+          'SEGUIR_USUARIOS',
+          'RECIBIR_VALORACIONES',
+          'ASISTIR_EVENTOS',
+          'SUBIR_LIBROS',
+        )
+        .required(),
+      objetivo: Joi.number().integer().min(1).required(),
+      activo: Joi.boolean().optional(),
+    }),
+    adminUpdate: Joi.object<IReto>({
+      title: Joi.string().trim().max(150).optional(),
+      description: Joi.string().trim().max(1000).optional(),
+      type: Joi.string()
+        .valid(
+          'COMPRAR_LIBROS',
+          'ALQUILAR_LIBROS',
+          'SEGUIR_USUARIOS',
+          'RECIBIR_VALORACIONES',
+          'ASISTIR_EVENTOS',
+          'SUBIR_LIBROS',
+        )
+        .optional(),
+      objetivo: Joi.number().integer().min(1).optional(),
+      activo: Joi.boolean().optional(),
+    }),
+    status: Joi.object<Pick<IReto, 'activo'>>({
+      activo: Joi.boolean().required(),
     }),
   },
   messageRequest: {

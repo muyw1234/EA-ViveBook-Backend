@@ -1,6 +1,14 @@
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 import Evento, { IEventoModel, IEvento } from '../models/Evento';
 import { getPagination, PaginatedResult } from './Pagination';
+
+export type AdminEventoQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  includeDeleted?: boolean;
+  upcoming?: boolean;
+};
 
 const createEvento = async (data: Partial<IEvento>): Promise<IEventoModel> => {
   const evento = new Evento({
@@ -40,6 +48,51 @@ const getAllEventos = async (
   };
 };
 
+const getAdminEventos = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  includeDeleted = true,
+  upcoming,
+}: AdminEventoQuery): Promise<PaginatedResult<IEventoModel>> => {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<IEventoModel> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeDeleted) filter.IsDeleted = false;
+  if (upcoming === true) filter.eventDate = { $gte: new Date() };
+  if (upcoming === false) filter.eventDate = { $lt: new Date() };
+
+  if (normalizedSearch) {
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { title: { $regex: escapedSearch, $options: 'i' } },
+      { description: { $regex: escapedSearch, $options: 'i' } },
+      { direccionExacta: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    Evento.find(filter)
+      .sort({ eventDate: 1, _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('creator', 'name email')
+      .populate('participant', 'name email avatar'),
+    Evento.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+};
+
 const getEventsAtExactLocation = async (lng: number, lat: number): Promise<IEventoModel[]> => {
   return await Evento.find({
     IsDeleted: { $ne: true },
@@ -51,12 +104,16 @@ const updateEvento = async (
   eventoId: string,
   data: Partial<IEvento>,
 ): Promise<IEventoModel | null> => {
-  const evento = await Evento.findById(eventoId);
-  if (evento) {
-    evento.set(data);
-    return await evento.save();
-  }
-  return null;
+  const evento = await Evento.findByIdAndUpdate(eventoId, data, {
+    new: true,
+    runValidators: true,
+  });
+  return evento
+    ? evento.populate([
+        { path: 'creator', select: 'name email' },
+        { path: 'participant', select: 'name email avatar' },
+      ])
+    : null;
 };
 
 const deleteEvento = async (eventoId: string): Promise<IEventoModel | null> => {
@@ -68,12 +125,13 @@ const deleteEvento = async (eventoId: string): Promise<IEventoModel | null> => {
 };
 
 const restoreEvento = async (eventoId: string): Promise<IEventoModel | null> => {
-  return await Evento.findByIdAndUpdate(
-    eventoId,
-    { IsDeleted: false }, // Restore by setting IsDeleted to false
-    { new: true },
-  ); // Return the updated document
+  return await setEventoDeleted(eventoId, false);
 };
+
+const setEventoDeleted = async (
+  eventoId: string,
+  IsDeleted: boolean,
+): Promise<IEventoModel | null> => updateEvento(eventoId, { IsDeleted });
 
 const participarEvento = async (
   eventoId: string,
@@ -99,10 +157,12 @@ export default {
   createEvento,
   getEvento,
   getAllEventos,
+  getAdminEventos,
   getEventsAtExactLocation,
   updateEvento,
   deleteEvento,
   restoreEvento,
+  setEventoDeleted,
   participarEvento,
   leaveEvento,
 };

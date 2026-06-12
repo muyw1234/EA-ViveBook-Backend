@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import LibroService from '../services/Libro';
 import Usuario from '../models/Usuario';
 import Logging from '../library/Logging';
-import { getPaginationParams } from './Pagination';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
 import { sendPushNotification } from '../services/NotificationService';
@@ -100,6 +100,38 @@ const getAllLibros = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+const getAdminLibros = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const type =
+      req.query.type === 'VENTA' || req.query.type === 'ALQUILER' ? req.query.type : undefined;
+    const estado = typeof req.query.estado === 'string' ? req.query.estado : undefined;
+    const libros = await LibroService.getAdminLibros({
+      page,
+      limit,
+      search,
+      includeDeleted,
+      type,
+      estado,
+    });
+
+    return sendSuccess(res, libros, 'Listado administrativo de libros obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de libros');
+  }
+};
+
+const createAdminLibro = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libro = await LibroService.createLibro(req.body);
+    return sendSuccess(res, libro, 'Libro creado desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear el libro desde el BackOffice');
+  }
+};
+
 const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = getPaginationParams(req);
@@ -186,6 +218,35 @@ const restoreLibro = async (req: Request, res: Response, next: NextFunction) => 
     return sendSuccess(res, libro, 'Libro restaurado con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al restaurar el libro');
+  }
+};
+
+const deactivateLibro = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libro = await LibroService.setLibroDeleted(req.params.libroId, true);
+
+    if (!libro) {
+      return sendError(res, 'No se encontró el libro para desactivar', 'Not Found', 404);
+    }
+
+    return sendSuccess(res, libro, 'Libro desactivado con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar el libro');
+  }
+};
+
+const setLibroStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libro = await LibroService.setLibroDeleted(req.params.libroId, req.body.IsDeleted);
+
+    if (!libro) {
+      return sendError(res, 'No se encontró el libro para cambiar su estado', 'Not Found', 404);
+    }
+
+    const message = libro.IsDeleted ? 'Libro desactivado con éxito' : 'Libro activado con éxito';
+    return sendSuccess(res, libro, message);
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado del libro');
   }
 };
 
@@ -325,11 +386,15 @@ export default {
   createLibro,
   getLibro,
   getAllLibros,
+  getAdminLibros,
+  createAdminLibro,
   getAllLibros_NOT_Deleted,
   getLibrosByType,
   updateLibro,
   deleteLibro,
   restoreLibro,
+  deactivateLibro,
+  setLibroStatus,
   createLibroByIsbn,
   searchLibroByTitle,
   buyLibro,

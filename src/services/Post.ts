@@ -1,7 +1,16 @@
 import Post, { IPost } from '../models/Post';
 import LibroService from './Libro';
 import mongoose from 'mongoose';
+import { FilterQuery } from 'mongoose';
 import { getPagination, PaginatedResult } from './Pagination';
+
+export type AdminPostQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  includeDeleted?: boolean;
+  status?: IPost['status'];
+};
 
 async function createPost(data: Partial<IPost>): Promise<IPost | null> {
   const buffer = new Post({
@@ -38,12 +47,62 @@ async function getAllPost(page = 1, limit = 10): Promise<PaginatedResult<IPost>>
   };
 }
 
+async function getAdminPosts({
+  page = 1,
+  limit = 10,
+  search = '',
+  includeDeleted = true,
+  status,
+}: AdminPostQuery): Promise<PaginatedResult<IPost>> {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<IPost> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeDeleted) filter.IsDeleted = false;
+  if (status) filter.status = status;
+
+  if (normalizedSearch) {
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { description: { $regex: escapedSearch, $options: 'i' } },
+      { status: { $regex: escapedSearch, $options: 'i' } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    Post.find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('ownerId', 'name email')
+      .populate('bookId', 'title isbn'),
+    Post.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+}
+
 async function updatePost(id: string, data: Partial<IPost>): Promise<IPost | null> {
-  return await Post.findByIdAndUpdate(id, data).select('-__v');
+  return await Post.findByIdAndUpdate(id, data, { new: true, runValidators: true })
+    .select('-__v')
+    .populate('ownerId', 'name email')
+    .populate('bookId', 'title isbn');
 }
 
 async function deletePost(id: string): Promise<IPost | null> {
   return await Post.findByIdAndDelete(id).select('-__v');
+}
+
+async function setPostDeleted(id: string, IsDeleted: boolean): Promise<IPost | null> {
+  return updatePost(id, { IsDeleted } as Partial<IPost>);
 }
 
 async function createPostByIsbn(isbn: string, data: Partial<IPost>): Promise<IPost | null> {
@@ -73,8 +132,10 @@ export default {
   createPost,
   getPostById,
   getAllPost,
+  getAdminPosts,
   updatePost,
   deletePost,
+  setPostDeleted,
   createPostByIsbn,
   searchPostByterm,
 };

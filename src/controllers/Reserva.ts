@@ -7,6 +7,8 @@ import Logging from '../library/Logging';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 import { getPaginationParams } from './Pagination';
 import { getPagination } from '../services/Pagination';
+import { getQueryBoolean } from './Pagination';
+import ReservaService from '../services/Reserva';
 
 const solicitarReserva = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -47,6 +49,7 @@ const solicitarReserva = async (req: Request, res: Response, next: NextFunction)
       libro: libroId,
       usuarioSolicitante: userId,
       estado: { $in: ['PENDIENTE', 'ACEPTADA'] },
+      IsDeleted: { $ne: true },
     });
 
     if (existingActive) {
@@ -107,6 +110,10 @@ const aceptarReserva = async (req: Request, res: Response, next: NextFunction) =
     const reserva = await Reserva.findById(reservaId);
     if (!reserva) {
       return sendError(res, 'La reserva no existe', 'Not Found', 404);
+    }
+
+    if (reserva.IsDeleted) {
+      return sendError(res, 'La reserva está desactivada', 'Bad Request', 400);
     }
 
     if (reserva.propietario.toString() !== userId.toString()) {
@@ -204,6 +211,10 @@ const rechazarReserva = async (req: Request, res: Response, next: NextFunction) 
       return sendError(res, 'La reserva no existe', 'Not Found', 404);
     }
 
+    if (reserva.IsDeleted) {
+      return sendError(res, 'La reserva está desactivada', 'Bad Request', 400);
+    }
+
     if (reserva.propietario.toString() !== userId.toString()) {
       return sendError(res, 'No eres el propietario de este libro', 'Unauthorized', 401);
     }
@@ -252,7 +263,11 @@ const getReservasSolicitadas = async (req: Request, res: Response, next: NextFun
       return res.status(401).json({ message: 'No autorizado' });
     }
 
-    const query = { usuarioSolicitante: userId, deletedBy: { $ne: userId } };
+    const query = {
+      usuarioSolicitante: userId,
+      deletedBy: { $ne: userId },
+      IsDeleted: { $ne: true },
+    };
     const [data, total] = await Promise.all([
       Reserva.find(query)
         .sort({ _id: -1 })
@@ -289,7 +304,11 @@ const getReservasRecibidas = async (req: Request, res: Response, next: NextFunct
       return res.status(401).json({ message: 'No autorizado' });
     }
 
-    const query = { propietario: userId, deletedBy: { $ne: userId } };
+    const query = {
+      propietario: userId,
+      deletedBy: { $ne: userId },
+      IsDeleted: { $ne: true },
+    };
     const [data, total] = await Promise.all([
       Reserva.find(query)
         .sort({ _id: -1 })
@@ -340,6 +359,87 @@ const deleteReserva = async (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
+const getAdminReservas = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const estado =
+      req.query.estado === 'PENDIENTE' ||
+      req.query.estado === 'ACEPTADA' ||
+      req.query.estado === 'RECHAZADA'
+        ? req.query.estado
+        : undefined;
+    const result = await ReservaService.getAdminReservas({
+      page,
+      limit,
+      search: typeof req.query.search === 'string' ? req.query.search : '',
+      includeDeleted: getQueryBoolean(req.query.includeDeleted, true),
+      estado,
+    });
+    return sendSuccess(res, result, 'Listado administrativo de reservas obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de reservas');
+  }
+};
+
+const getAdminReserva = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.getAdminReserva(req.params.id);
+    if (!reserva) return sendError(res, 'La reserva solicitada no existe', 'Not Found', 404);
+    return sendSuccess(res, reserva, 'Reserva obtenida con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar la reserva');
+  }
+};
+
+const createAdminReserva = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.createAdminReserva(req.body);
+    return sendSuccess(res, reserva, 'Reserva creada desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear la reserva desde el BackOffice');
+  }
+};
+
+const updateAdminReserva = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.updateAdminReserva(req.params.id, req.body);
+    if (!reserva) {
+      return sendError(res, 'No se encontró la reserva para actualizar', 'Not Found', 404);
+    }
+    return sendSuccess(res, reserva, 'Reserva actualizada con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar la reserva');
+  }
+};
+
+const deactivateAdminReserva = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.setReservaDeleted(req.params.id, true);
+    if (!reserva) {
+      return sendError(res, 'No se encontró la reserva para desactivar', 'Not Found', 404);
+    }
+    return sendSuccess(res, reserva, 'Reserva desactivada con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar la reserva');
+  }
+};
+
+const setAdminReservaStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.setReservaDeleted(req.params.id, req.body.IsDeleted);
+    if (!reserva) {
+      return sendError(res, 'No se encontró la reserva para cambiar su estado', 'Not Found', 404);
+    }
+    return sendSuccess(
+      res,
+      reserva,
+      reserva.IsDeleted ? 'Reserva desactivada con éxito' : 'Reserva restaurada con éxito',
+    );
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado de la reserva');
+  }
+};
+
 export default {
   solicitarReserva,
   aceptarReserva,
@@ -347,4 +447,10 @@ export default {
   getReservasSolicitadas,
   getReservasRecibidas,
   deleteReserva,
+  getAdminReservas,
+  getAdminReserva,
+  createAdminReserva,
+  updateAdminReserva,
+  deactivateAdminReserva,
+  setAdminReservaStatus,
 };
