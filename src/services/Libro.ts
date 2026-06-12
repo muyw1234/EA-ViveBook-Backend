@@ -78,6 +78,11 @@ export async function getAllLibros(page = 1, limit = 10): Promise<PaginatedResul
   };
 }
 
+async function getActiveUserIds(): Promise<string[]> {
+  const activeUsers = await Usuario.find({ IsDeleted: false }).select('_id');
+  return activeUsers.map((u) => u._id.toString());
+}
+
 export async function getAllLibros_NOT_Deleted(
   page = 1,
   limit = 10,
@@ -85,10 +90,20 @@ export async function getAllLibros_NOT_Deleted(
   extraFilters: any = {},
 ): Promise<PaginatedResult<ILibro>> {
   const pagination = getPagination(page, limit);
+  const activeUserIds = await getActiveUserIds();
   const filter: any = { IsDeleted: false, ...extraFilters };
 
   if (excludeOwnerId && mongoose.Types.ObjectId.isValid(excludeOwnerId)) {
-    filter.owner = { $ne: new mongoose.Types.ObjectId(excludeOwnerId) };
+    const filteredActiveUserIds = activeUserIds.filter((id) => id !== excludeOwnerId.toString());
+    filter.$or = [
+      { owner: { $in: filteredActiveUserIds } },
+      { owner: { $exists: false } },
+    ];
+  } else {
+    filter.$or = [
+      { owner: { $in: activeUserIds } },
+      { owner: { $exists: false } },
+    ];
   }
 
   const [data, total] = await Promise.all([
@@ -119,10 +134,20 @@ export async function getLibrosByType(
   excludeOwnerId?: string,
 ): Promise<PaginatedResult<ILibro>> {
   const pagination = getPagination(page, limit);
+  const activeUserIds = await getActiveUserIds();
   const filter: any = { type: type, IsDeleted: false };
 
   if (excludeOwnerId && mongoose.Types.ObjectId.isValid(excludeOwnerId)) {
-    filter.owner = { $ne: new mongoose.Types.ObjectId(excludeOwnerId) };
+    const filteredActiveUserIds = activeUserIds.filter((id) => id !== excludeOwnerId.toString());
+    filter.$or = [
+      { owner: { $in: filteredActiveUserIds } },
+      { owner: { $exists: false } },
+    ];
+  } else {
+    filter.$or = [
+      { owner: { $in: activeUserIds } },
+      { owner: { $exists: false } },
+    ];
   }
 
   const [data, total] = await Promise.all([
