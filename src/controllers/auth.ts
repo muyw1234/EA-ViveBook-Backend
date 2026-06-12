@@ -65,7 +65,7 @@ export const signin = async (req: Request, res: Response, next: NextFunction) =>
       { _id: user._id, rol: user.rol } as IPayload,
       config.jwt.accessSecret,
       {
-        expiresIn: 60 * 15, // 15 minutos
+        expiresIn: 60 * 60 * 24 * 7, // 7 días
       },
     );
 
@@ -199,7 +199,7 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
       { _id: user._id, rol: user.rol } as IPayload,
       config.jwt.accessSecret,
       {
-        expiresIn: 60 * 15,
+        expiresIn: 60 * 60 * 24 * 7, // 7 días
       },
     );
 
