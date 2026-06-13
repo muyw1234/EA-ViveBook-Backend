@@ -13,6 +13,7 @@
     "lint:fix": "eslint --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "populate:db": "ts-node src/populateDB.ts",
     "prepare": "husky"
   },
   "author": "",

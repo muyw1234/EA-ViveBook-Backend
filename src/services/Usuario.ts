@@ -11,7 +11,23 @@ export type AdminUsuarioQuery = {
   rol?: IUsuario['rol'];
 };
 
-const adminUsuarioSelect = '-password -googleId -appleId -expoPushToken -notificationUsersEnabled';
+const adminUsuarioSelect = '-password -googleId -appleId -expoPushToken';
+
+const populateAdminUsuario = <T>(query: T): T => {
+  const mongooseQuery = query as T & {
+    populate: (path: string, select: string) => typeof mongooseQuery;
+  };
+
+  return mongooseQuery
+    .populate('libros', 'title isbn type')
+    .populate('boughtLibros', 'title isbn type')
+    .populate('rentedLibros', 'title isbn type')
+    .populate('favoriteBooks', 'title isbn type')
+    .populate('wishlist', 'title isbn type')
+    .populate('favoritos', 'title isbn type')
+    .populate('followingUsers', 'name email rol')
+    .populate('notificationUsersEnabled', 'name email rol') as T;
+};
 
 const createUsuario = async (data: Partial<IUsuario>): Promise<IUsuarioModel> => {
   const usuario = new Usuario({
@@ -113,12 +129,13 @@ const getAdminUsuarios = async ({
   }
 
   const [data, total] = await Promise.all([
-    Usuario.find(filter)
-      .select(adminUsuarioSelect)
-      .sort({ name: 1, email: 1, _id: 1 })
-      .skip(pagination.skip)
-      .limit(pagination.limit)
-      .populate('libros', 'title'),
+    populateAdminUsuario(
+      Usuario.find(filter)
+        .select(adminUsuarioSelect)
+        .sort({ name: 1, email: 1, _id: 1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+    ),
     Usuario.countDocuments(filter),
   ]);
 
@@ -134,7 +151,7 @@ const getAdminUsuarios = async ({
 };
 
 const getAdminUsuario = async (usuarioId: string): Promise<IUsuarioModel | null> => {
-  return Usuario.findById(usuarioId).select(adminUsuarioSelect).populate('libros', 'title');
+  return populateAdminUsuario(Usuario.findById(usuarioId).select(adminUsuarioSelect));
 };
 
 const createAdminUsuario = async (data: Partial<IUsuario>): Promise<IUsuarioModel | null> => {

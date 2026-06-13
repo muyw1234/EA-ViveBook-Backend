@@ -38,6 +38,34 @@ router.use(TokenValidation, isAdmin);
  *           type: array
  *           items:
  *             type: string
+ *         boughtLibros:
+ *           type: array
+ *           items: { type: string }
+ *         rentedLibros:
+ *           type: array
+ *           items: { type: string }
+ *         favoriteAuthors:
+ *           type: array
+ *           maxItems: 5
+ *           items: { type: string }
+ *         favoriteBooks:
+ *           type: array
+ *           items: { type: string }
+ *         favoriteCategories:
+ *           type: array
+ *           items: { type: string }
+ *         wishlist:
+ *           type: array
+ *           items: { type: string }
+ *         followingUsers:
+ *           type: array
+ *           items: { type: string }
+ *         favoritos:
+ *           type: array
+ *           items: { type: string }
+ *         notificationUsersEnabled:
+ *           type: array
+ *           items: { type: string }
  *         description:
  *           type: string
  *         IsDeleted:
