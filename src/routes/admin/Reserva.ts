@@ -104,6 +104,12 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema: { type: string }
  *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [user, book, date, status, _id]
+ *         description: Campo seguro por el que se realiza la búsqueda.
+ *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
  *       - in: query
@@ -168,6 +174,26 @@ router.post('/', ValidateJoi(Schemas.reserva.adminCreate), controller.createAdmi
  *               $ref: '#/components/schemas/AdminReservaResponse'
  */
 router.patch('/:id/status', ValidateJoi(Schemas.reserva.status), controller.setAdminReservaStatus);
+
+/**
+ * @openapi
+ * /admin/reservas/{id}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente una reserva
+ *     tags: [Admin - Reservas]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Reserva eliminada definitivamente.
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:id/permanent', controller.permanentDeleteAdminReserva);
 
 /**
  * @openapi

@@ -1,9 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import {
   createAdminReto,
+  AdminRetoSearchField,
+  adminRetoSearchFields,
   getAdminReto,
   getAdminRetos,
   obtenerMisRetos,
+  permanentDeleteReto,
   setRetoActivo,
   updateAdminReto,
 } from '../services/Retos';
@@ -68,6 +71,16 @@ const getMisRetos = async (req: Request, res: Response, next: NextFunction) => {
 const getAdminRetosController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = getPaginationParams(req);
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'title';
+    if (!adminRetoSearchFields.includes(requestedSearchField as AdminRetoSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
     const validTypes = [
       'COMPRAR_LIBROS',
       'ALQUILAR_LIBROS',
@@ -85,6 +98,7 @@ const getAdminRetosController = async (req: Request, res: Response, next: NextFu
       page,
       limit,
       search: typeof req.query.search === 'string' ? req.query.search : '',
+      searchField: requestedSearchField as AdminRetoSearchField,
       includeInactive: getQueryBoolean(req.query.includeInactive, true),
       type,
     });
@@ -149,6 +163,16 @@ const setAdminRetoStatus = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+const permanentDeleteAdminReto = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reto = await permanentDeleteReto(req.params.id);
+    if (!reto) return sendError(res, 'No se encontró el reto para eliminar', 'Not Found', 404);
+    return sendSuccess(res, null, 'Reto eliminado definitivamente');
+  } catch (error) {
+    return sendError(res, error, 'Error al eliminar definitivamente el reto');
+  }
+};
+
 export default {
   getRetos,
   getMisRetos,
@@ -158,4 +182,5 @@ export default {
   updateAdminReto: updateAdminRetoController,
   deactivateAdminReto,
   setAdminRetoStatus,
+  permanentDeleteAdminReto,
 };

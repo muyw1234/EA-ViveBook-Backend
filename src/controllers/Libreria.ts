@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import LibreriaService from '../services/Libreria';
+import { adminLibreriaSearchFields, AdminLibreriaSearchField } from '../services/Libreria';
 import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendError, sendSuccess } from '../library/ApiResponse';
 
@@ -39,11 +40,24 @@ const getAdminLibrerias = async (req: Request, res: Response, next: NextFunction
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'name';
+
+    if (!adminLibreriaSearchFields.includes(requestedSearchField as AdminLibreriaSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
+
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const librerias = await LibreriaService.getAdminLibrerias({
       page,
       limit,
       search,
+      searchField: requestedSearchField as AdminLibreriaSearchField,
       includeDeleted,
     });
 
@@ -117,6 +131,18 @@ const setAdminLibreriaStatus = async (req: Request, res: Response, next: NextFun
   }
 };
 
+const permanentDeleteAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.permanentDeleteLibreria(req.params.libreriaId);
+    if (!libreria) {
+      return sendError(res, 'No se encontró la librería para eliminar', 'Not Found', 404);
+    }
+    return sendSuccess(res, null, 'Librería eliminada definitivamente');
+  } catch (error) {
+    return sendError(res, error, 'Error al eliminar definitivamente la librería');
+  }
+};
+
 const updateLibreria = async (req: Request, res: Response, next: NextFunction) => {
   const libreriaId = req.params.libreriaId;
   try {
@@ -165,6 +191,7 @@ export default {
   updateAdminLibreria,
   deactivateAdminLibreria,
   setAdminLibreriaStatus,
+  permanentDeleteAdminLibreria,
   updateLibreria,
   deleteLibreria,
   restoreLibreria,

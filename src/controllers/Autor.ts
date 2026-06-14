@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import AutorService from '../services/Autor';
+import { adminAutorSearchFields, AdminAutorSearchField } from '../services/Autor';
 import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
 
@@ -54,11 +55,24 @@ const getAdminAutores = async (req: Request, res: Response, next: NextFunction) 
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'fullName';
+
+    if (!adminAutorSearchFields.includes(requestedSearchField as AdminAutorSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
+
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const autores = await AutorService.getAdminAutores({
       page,
       limit,
       search,
+      searchField: requestedSearchField as AdminAutorSearchField,
       includeDeleted,
     });
 

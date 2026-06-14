@@ -3,10 +3,14 @@ import mongoose, { FilterQuery } from 'mongoose';
 import Usuario, { IUsuarioModel, IUsuario } from '../models/Usuario';
 import { getPagination, PaginatedResult } from './Pagination';
 
+export const adminUsuarioSearchFields = ['name', 'email', 'role', '_id'] as const;
+export type AdminUsuarioSearchField = (typeof adminUsuarioSearchFields)[number];
+
 export type AdminUsuarioQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminUsuarioSearchField;
   includeDeleted?: boolean;
   rol?: IUsuario['rol'];
 };
@@ -104,6 +108,7 @@ const getAdminUsuarios = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'name',
   includeDeleted = true,
   rol,
 }: AdminUsuarioQuery): Promise<PaginatedResult<IUsuarioModel>> => {
@@ -121,11 +126,24 @@ const getAdminUsuarios = async ({
 
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { name: { $regex: escapedSearch, $options: 'i' } },
-      { email: { $regex: escapedSearch, $options: 'i' } },
-      { description: { $regex: escapedSearch, $options: 'i' } },
-    ];
+
+    switch (searchField) {
+      case 'email':
+        filter.email = { $regex: escapedSearch, $options: 'i' };
+        break;
+      case 'role':
+        filter.rol = { $regex: escapedSearch, $options: 'i' };
+        break;
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+      case 'name':
+      default:
+        filter.name = { $regex: escapedSearch, $options: 'i' };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([

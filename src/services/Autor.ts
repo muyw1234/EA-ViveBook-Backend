@@ -2,10 +2,14 @@ import mongoose, { FilterQuery } from 'mongoose';
 import Autor, { IAutorModel, IAutor } from '../models/Autor';
 import { getPagination, PaginatedResult } from './Pagination';
 
+export const adminAutorSearchFields = ['fullName', '_id'] as const;
+export type AdminAutorSearchField = (typeof adminAutorSearchFields)[number];
+
 export type AdminAutorQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminAutorSearchField;
   includeDeleted?: boolean;
 };
 
@@ -68,6 +72,7 @@ const getAdminAutores = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'fullName',
   includeDeleted = true,
 }: AdminAutorQuery): Promise<PaginatedResult<IAutorModel>> => {
   const pagination = getPagination(page, limit);
@@ -79,10 +84,16 @@ const getAdminAutores = async ({
   }
 
   if (normalizedSearch) {
-    filter.fullName = {
-      $regex: normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-      $options: 'i',
-    };
+    if (searchField === '_id') {
+      filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+        ? new mongoose.Types.ObjectId(normalizedSearch)
+        : { $exists: false };
+    } else {
+      filter.fullName = {
+        $regex: normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        $options: 'i',
+      };
+    }
   }
 
   const [data, total] = await Promise.all([

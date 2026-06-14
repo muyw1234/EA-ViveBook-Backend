@@ -91,6 +91,12 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema: { type: string }
  *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [title, type, objective, date, _id]
+ *         description: Campo seguro por el que se realiza la búsqueda.
+ *       - in: query
  *         name: includeInactive
  *         schema: { type: boolean, default: true }
  *       - in: query
@@ -155,6 +161,26 @@ router.post('/', ValidateJoi(Schemas.reto.adminCreate), controller.createAdminRe
  *               $ref: '#/components/schemas/AdminRetoResponse'
  */
 router.patch('/:id/status', ValidateJoi(Schemas.reto.status), controller.setAdminRetoStatus);
+
+/**
+ * @openapi
+ * /admin/retos/{id}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un reto y sus progresos
+ *     tags: [Admin - Retos]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Reto eliminado definitivamente.
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:id/permanent', controller.permanentDeleteAdminReto);
 
 /**
  * @openapi

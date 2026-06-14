@@ -5,11 +5,16 @@ import { callOpenLibraryBookApi } from './Util';
 import Logging from '../library/Logging';
 import Autor from './Autor';
 import { getPagination, PaginatedResult } from './Pagination';
+import AutorModel from '../models/Autor';
+
+export const adminLibroSearchFields = ['title', 'isbn', 'author', '_id'] as const;
+export type AdminLibroSearchField = (typeof adminLibroSearchFields)[number];
 
 export type AdminLibroQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminLibroSearchField;
   includeDeleted?: boolean;
   type?: ILibro['type'];
   estado?: string;
@@ -91,6 +96,7 @@ export async function getAdminLibros({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'title',
   includeDeleted = true,
   type,
   estado,
@@ -113,13 +119,31 @@ export async function getAdminLibros({
 
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { title: { $regex: escapedSearch, $options: 'i' } },
-      { isbn: { $regex: escapedSearch, $options: 'i' } },
-      { autor: { $regex: escapedSearch, $options: 'i' } },
-      { categoria: { $regex: escapedSearch, $options: 'i' } },
-      { estado: { $regex: escapedSearch, $options: 'i' } },
-    ];
+
+    switch (searchField) {
+      case 'isbn':
+        filter.isbn = { $regex: escapedSearch, $options: 'i' };
+        break;
+      case 'author': {
+        const matchingAuthors = await AutorModel.find({
+          fullName: { $regex: escapedSearch, $options: 'i' },
+        }).select('_id');
+        filter.$or = [
+          { autor: { $regex: escapedSearch, $options: 'i' } },
+          { authors: { $in: matchingAuthors.map((author) => author._id) } },
+        ];
+        break;
+      }
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+      case 'title':
+      default:
+        filter.title = { $regex: escapedSearch, $options: 'i' };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([

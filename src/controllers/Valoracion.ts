@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
-import ValoracionService from '../services/Valoracion';
+import ValoracionService, {
+  AdminValoracionSearchField,
+  adminValoracionSearchFields,
+} from '../services/Valoracion';
 import Logging from '../library/Logging';
 import { actualizarProgresoRetos } from '../services/Retos';
 import { sendPushNotification } from '../services/NotificationService';
@@ -98,6 +101,16 @@ const getAdminValoraciones = async (req: Request, res: Response, next: NextFunct
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'user';
+    if (!adminValoracionSearchFields.includes(requestedSearchField as AdminValoracionSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const parsedRating = Number(req.query.puntuacion);
     const puntuacion =
@@ -114,6 +127,7 @@ const getAdminValoraciones = async (req: Request, res: Response, next: NextFunct
       page,
       limit,
       search,
+      searchField: requestedSearchField as AdminValoracionSearchField,
       includeDeleted,
       puntuacion,
       tipoOperacion,
@@ -197,6 +211,18 @@ const setAdminValoracionStatus = async (req: Request, res: Response, next: NextF
   }
 };
 
+const permanentDeleteAdminValoracion = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const valoracion = await ValoracionService.permanentDeleteValoracion(req.params.id);
+    if (!valoracion) {
+      return sendError(res, 'No se encontró la valoración para eliminar', 'Not Found', 404);
+    }
+    return sendSuccess(res, null, 'Valoración eliminada definitivamente');
+  } catch (error) {
+    return sendError(res, error, 'Error al eliminar definitivamente la valoración');
+  }
+};
+
 export default {
   createValoracion,
   getValoracionesReceived,
@@ -207,4 +233,5 @@ export default {
   updateAdminValoracion,
   deactivateAdminValoracion,
   setAdminValoracionStatus,
+  permanentDeleteAdminValoracion,
 };

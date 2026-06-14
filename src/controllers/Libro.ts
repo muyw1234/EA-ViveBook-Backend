@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import LibroService from '../services/Libro';
+import { adminLibroSearchFields, AdminLibroSearchField } from '../services/Libro';
 import Usuario from '../models/Usuario';
 import Logging from '../library/Logging';
 import { getPaginationParams, getQueryBoolean } from './Pagination';
@@ -104,6 +105,18 @@ const getAdminLibros = async (req: Request, res: Response, next: NextFunction) =
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'title';
+
+    if (!adminLibroSearchFields.includes(requestedSearchField as AdminLibroSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
+
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const type =
       req.query.type === 'VENTA' || req.query.type === 'ALQUILER' ? req.query.type : undefined;
@@ -112,6 +125,7 @@ const getAdminLibros = async (req: Request, res: Response, next: NextFunction) =
       page,
       limit,
       search,
+      searchField: requestedSearchField as AdminLibroSearchField,
       includeDeleted,
       type,
       estado,

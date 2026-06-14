@@ -106,6 +106,12 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema: { type: string }
  *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [user, book, rating, _id]
+ *         description: Campo seguro por el que se realiza la búsqueda.
+ *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
  *       - in: query
@@ -177,6 +183,26 @@ router.patch(
   ValidateJoi(Schemas.valoracion.status),
   controller.setAdminValoracionStatus,
 );
+
+/**
+ * @openapi
+ * /admin/valoraciones/{id}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente una valoración
+ *     tags: [Admin - Valoraciones]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Valoración eliminada definitivamente.
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:id/permanent', controller.permanentDeleteAdminValoracion);
 
 /**
  * @openapi

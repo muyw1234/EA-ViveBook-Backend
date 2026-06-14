@@ -1,4 +1,6 @@
 import Post, { IPost } from '../models/Post';
+import Libro from '../models/Libro';
+import Usuario from '../models/Usuario';
 import LibroService from './Libro';
 import mongoose from 'mongoose';
 import { FilterQuery } from 'mongoose';
@@ -8,9 +10,13 @@ export type AdminPostQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminPostSearchField;
   includeDeleted?: boolean;
   status?: IPost['status'];
 };
+
+export const adminPostSearchFields = ['book', 'owner', 'price', 'status', '_id'] as const;
+export type AdminPostSearchField = (typeof adminPostSearchFields)[number];
 
 async function createPost(data: Partial<IPost>): Promise<IPost | null> {
   const buffer = new Post({
@@ -51,6 +57,7 @@ async function getAdminPosts({
   page = 1,
   limit = 10,
   search = '',
+  searchField,
   includeDeleted = true,
   status,
 }: AdminPostQuery): Promise<PaginatedResult<IPost>> {
@@ -61,12 +68,37 @@ async function getAdminPosts({
   if (!includeDeleted) filter.IsDeleted = false;
   if (status) filter.status = status;
 
-  if (normalizedSearch) {
+  if (normalizedSearch && searchField) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { description: { $regex: escapedSearch, $options: 'i' } },
-      { status: { $regex: escapedSearch, $options: 'i' } },
-    ];
+    const regex = { $regex: escapedSearch, $options: 'i' };
+
+    switch (searchField) {
+      case 'book': {
+        const books = await Libro.find({ $or: [{ title: regex }, { isbn: regex }] }).select('_id');
+        filter.bookId = { $in: books.map((book) => book._id) };
+        break;
+      }
+      case 'owner': {
+        const owners = await Usuario.find({ $or: [{ name: regex }, { email: regex }] }).select(
+          '_id',
+        );
+        filter.ownerId = { $in: owners.map((owner) => owner._id) };
+        break;
+      }
+      case 'price': {
+        const price = Number(normalizedSearch.replace(',', '.'));
+        filter.price = Number.isFinite(price) ? price : { $exists: false };
+        break;
+      }
+      case 'status':
+        filter.status = regex;
+        break;
+      case '_id':
+        filter._id = mongoose.isValidObjectId(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([

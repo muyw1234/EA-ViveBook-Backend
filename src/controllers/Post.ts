@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { IPost } from '../models/Post';
-import PostService from '../services/Post';
+import PostService, { AdminPostSearchField, adminPostSearchFields } from '../services/Post';
 import Logging from '../library/Logging';
 import { getPaginationParams, getQueryBoolean } from './Pagination';
 import { sendSuccess, sendError } from '../library/ApiResponse';
@@ -67,6 +67,14 @@ async function readAdminPosts(req: Request, res: Response, next: NextFunction) {
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const searchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : undefined;
+    if (
+      search &&
+      (!searchField || !adminPostSearchFields.includes(searchField as AdminPostSearchField))
+    ) {
+      return sendError(res, 'El campo de búsqueda no es válido', 'Bad Request', 400);
+    }
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const allowedStatuses = ['VENTA', 'ALQUILER', 'NO_DISPONIBLE'];
     const status =
@@ -77,6 +85,7 @@ async function readAdminPosts(req: Request, res: Response, next: NextFunction) {
       page,
       limit,
       search,
+      searchField: searchField as AdminPostSearchField | undefined,
       includeDeleted,
       status,
     });

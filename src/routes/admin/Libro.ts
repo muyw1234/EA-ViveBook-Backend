@@ -144,7 +144,14 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema:
  *           type: string
- *         description: Busca en título, ISBN, autor textual, categoría y estado.
+ *         description: Texto que se buscará en el campo seleccionado.
+ *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [title, isbn, author, _id]
+ *           default: title
+ *         description: Campo permitido sobre el que se aplica la búsqueda.
  *       - in: query
  *         name: includeDeleted
  *         schema:
@@ -244,6 +251,34 @@ router.post('/', ValidateJoi(Schemas.libro.adminCreate), controller.createAdminL
  *         $ref: '#/components/responses/InternalError'
  */
 router.patch('/:libroId/status', ValidateJoi(Schemas.libro.status), controller.setLibroStatus);
+
+/**
+ * @openapi
+ * /admin/libros/{libroId}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un libro
+ *     description: Elimina físicamente el documento. Esta acción no se puede deshacer.
+ *     tags: [Admin - Libros]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: libroId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
+ *     responses:
+ *       200:
+ *         description: Libro eliminado definitivamente.
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:libroId/permanent', controller.deleteLibro);
 
 /**
  * @openapi

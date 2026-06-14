@@ -82,6 +82,14 @@ router.use(TokenValidation, isAdmin);
  *       - in: query
  *         name: search
  *         schema: { type: string }
+ *         description: Texto que se buscará en el campo seleccionado.
+ *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [title, eventDate, address, _id]
+ *           default: title
+ *         description: Campo permitido. eventDate acepta el formato AAAA-MM-DD.
  *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
@@ -150,6 +158,31 @@ router.patch(
   ValidateJoi(Schemas.evento.status),
   controller.setAdminEventoStatus,
 );
+
+/**
+ * @openapi
+ * /admin/eventos/{eventoId}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un evento
+ *     description: Elimina físicamente el documento. Esta acción no se puede deshacer.
+ *     tags: [Admin - Eventos]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: eventoId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Evento eliminado definitivamente.
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:eventoId/permanent', controller.permanentDeleteAdminEvento);
 
 /**
  * @openapi

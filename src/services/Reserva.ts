@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 import Libro from '../models/Libro';
 import Reserva, { IReserva, IReservaModel } from '../models/Reserva';
 import Usuario from '../models/Usuario';
@@ -9,9 +9,13 @@ export type AdminReservaQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminReservaSearchField;
   includeDeleted?: boolean;
   estado?: IReserva['estado'];
 };
+
+export const adminReservaSearchFields = ['user', 'book', 'date', 'status', '_id'] as const;
+export type AdminReservaSearchField = (typeof adminReservaSearchFields)[number];
 
 const populateReserva = (id: string) =>
   Reserva.findById(id)
@@ -114,6 +118,7 @@ const getAdminReservas = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'user',
   includeDeleted = true,
   estado,
 }: AdminReservaQuery): Promise<PaginatedResult<IReservaModel>> => {
@@ -126,28 +131,47 @@ const getAdminReservas = async ({
 
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const [usuarios, libros] = await Promise.all([
-      Usuario.find({
-        $or: [
-          { name: { $regex: escapedSearch, $options: 'i' } },
-          { email: { $regex: escapedSearch, $options: 'i' } },
-        ],
-      }).select('_id'),
-      Libro.find({
-        $or: [
-          { title: { $regex: escapedSearch, $options: 'i' } },
-          { isbn: { $regex: escapedSearch, $options: 'i' } },
-        ],
-      }).select('_id'),
-    ]);
-    const userIds = usuarios.map((usuario) => usuario._id);
-    const bookIds = libros.map((libro) => libro._id);
-    filter.$or = [
-      { estado: { $regex: escapedSearch, $options: 'i' } },
-      { usuarioSolicitante: { $in: userIds } },
-      { propietario: { $in: userIds } },
-      { libro: { $in: bookIds } },
-    ];
+    const regex = { $regex: escapedSearch, $options: 'i' };
+
+    switch (searchField) {
+      case 'user': {
+        const users = await Usuario.find({ $or: [{ name: regex }, { email: regex }] }).select(
+          '_id',
+        );
+        const userIds = users.map((user) => user._id);
+        filter.$or = [{ usuarioSolicitante: { $in: userIds } }, { propietario: { $in: userIds } }];
+        break;
+      }
+      case 'book': {
+        const books = await Libro.find({ $or: [{ title: regex }, { isbn: regex }] }).select('_id');
+        filter.libro = { $in: books.map((book) => book._id) };
+        break;
+      }
+      case 'date': {
+        const date = new Date(normalizedSearch);
+        if (Number.isNaN(date.getTime())) {
+          filter._id = { $exists: false };
+          break;
+        }
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        filter.$or = [
+          { fechaSolicitud: { $gte: start, $lt: end } },
+          { fechaLimite: { $gte: start, $lt: end } },
+        ];
+        break;
+      }
+      case 'status':
+        filter.estado = regex;
+        break;
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([
@@ -209,10 +233,22 @@ const updateAdminReserva = async (
 const setReservaDeleted = async (id: string, IsDeleted: boolean): Promise<IReservaModel | null> =>
   updateAdminReserva(id, { IsDeleted });
 
+const permanentDeleteReserva = async (id: string): Promise<IReservaModel | null> => {
+  const reserva = await Reserva.findById(id);
+  if (!reserva) return null;
+
+  if (reserva.estado === 'ACEPTADA' && reserva.IsDeleted !== true) {
+    await releaseBook(reserva);
+  }
+
+  return Reserva.findByIdAndDelete(id);
+};
+
 export default {
   getAdminReservas,
   getAdminReserva,
   createAdminReserva,
   updateAdminReserva,
   setReservaDeleted,
+  permanentDeleteReserva,
 };

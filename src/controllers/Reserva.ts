@@ -8,7 +8,10 @@ import { sendSuccess, sendError } from '../library/ApiResponse';
 import { getPaginationParams } from './Pagination';
 import { getPagination } from '../services/Pagination';
 import { getQueryBoolean } from './Pagination';
-import ReservaService from '../services/Reserva';
+import ReservaService, {
+  AdminReservaSearchField,
+  adminReservaSearchFields,
+} from '../services/Reserva';
 
 const solicitarReserva = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -362,6 +365,16 @@ const deleteReserva = async (req: Request, res: Response, next: NextFunction) =>
 const getAdminReservas = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = getPaginationParams(req);
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'user';
+    if (!adminReservaSearchFields.includes(requestedSearchField as AdminReservaSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
     const estado =
       req.query.estado === 'PENDIENTE' ||
       req.query.estado === 'ACEPTADA' ||
@@ -372,6 +385,7 @@ const getAdminReservas = async (req: Request, res: Response, next: NextFunction)
       page,
       limit,
       search: typeof req.query.search === 'string' ? req.query.search : '',
+      searchField: requestedSearchField as AdminReservaSearchField,
       includeDeleted: getQueryBoolean(req.query.includeDeleted, true),
       estado,
     });
@@ -440,6 +454,18 @@ const setAdminReservaStatus = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+const permanentDeleteAdminReserva = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reserva = await ReservaService.permanentDeleteReserva(req.params.id);
+    if (!reserva) {
+      return sendError(res, 'No se encontró la reserva para eliminar', 'Not Found', 404);
+    }
+    return sendSuccess(res, null, 'Reserva eliminada definitivamente');
+  } catch (error) {
+    return sendError(res, error, 'Error al eliminar definitivamente la reserva');
+  }
+};
+
 export default {
   solicitarReserva,
   aceptarReserva,
@@ -453,4 +479,5 @@ export default {
   updateAdminReserva,
   deactivateAdminReserva,
   setAdminReservaStatus,
+  permanentDeleteAdminReserva,
 };

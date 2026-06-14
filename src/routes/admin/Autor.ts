@@ -91,7 +91,14 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema:
  *           type: string
- *         description: Texto buscado en fullName sin distinguir mayúsculas.
+ *         description: Texto que se buscará en el campo seleccionado.
+ *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [fullName, _id]
+ *           default: fullName
+ *         description: Campo permitido sobre el que se aplica la búsqueda.
  *       - in: query
  *         name: includeDeleted
  *         schema:
@@ -182,6 +189,34 @@ router.post('/', ValidateJoi(Schemas.Autor.create), controller.createAutor);
  *         $ref: '#/components/responses/InternalError'
  */
 router.patch('/:autorId/status', ValidateJoi(Schemas.Autor.status), controller.setAutorStatus);
+
+/**
+ * @openapi
+ * /admin/autores/{autorId}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un autor
+ *     description: Elimina físicamente el documento. Esta acción no se puede deshacer.
+ *     tags: [Admin - Autores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: autorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
+ *     responses:
+ *       200:
+ *         description: Autor eliminado definitivamente.
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:autorId/permanent', controller.deleteAutor);
 
 /**
  * @openapi

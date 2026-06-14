@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 import Reto, { IReto, IRetoModel, TipoReto } from '../models/Reto';
 import ProgresoReto from '../models/ProgresoReto';
 import { getPagination, PaginatedResult } from './Pagination';
@@ -7,9 +7,13 @@ export type AdminRetoQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminRetoSearchField;
   includeInactive?: boolean;
   type?: TipoReto;
 };
+
+export const adminRetoSearchFields = ['title', 'type', 'objective', 'date', '_id'] as const;
+export type AdminRetoSearchField = (typeof adminRetoSearchFields)[number];
 
 const retosIniciales: {
   title: string;
@@ -239,6 +243,7 @@ export const getAdminRetos = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'title',
   includeInactive = true,
   type,
 }: AdminRetoQuery): Promise<PaginatedResult<IRetoModel>> => {
@@ -250,11 +255,43 @@ export const getAdminRetos = async ({
   if (type) filter.type = type;
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { title: { $regex: escapedSearch, $options: 'i' } },
-      { description: { $regex: escapedSearch, $options: 'i' } },
-      { type: { $regex: escapedSearch, $options: 'i' } },
-    ];
+    const regex = { $regex: escapedSearch, $options: 'i' };
+
+    switch (searchField) {
+      case 'title':
+        filter.title = regex;
+        break;
+      case 'type':
+        filter.type = regex;
+        break;
+      case 'objective': {
+        const objective = Number(normalizedSearch);
+        filter.objetivo =
+          Number.isInteger(objective) && objective >= 1 ? objective : { $exists: false };
+        break;
+      }
+      case 'date': {
+        const date = new Date(normalizedSearch);
+        if (Number.isNaN(date.getTime())) {
+          filter._id = { $exists: false };
+          break;
+        }
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        filter.$or = [
+          { createdAt: { $gte: start, $lt: end } },
+          { updatedAt: { $gte: start, $lt: end } },
+        ];
+        break;
+      }
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([
@@ -309,3 +346,11 @@ export const updateAdminReto = async (
 
 export const setRetoActivo = async (id: string, activo: boolean): Promise<IRetoModel | null> =>
   updateAdminReto(id, { activo });
+
+export const permanentDeleteReto = async (id: string): Promise<IRetoModel | null> => {
+  const reto = await Reto.findByIdAndDelete(id);
+  if (!reto) return null;
+
+  await ProgresoReto.deleteMany({ reto: id });
+  return reto;
+};

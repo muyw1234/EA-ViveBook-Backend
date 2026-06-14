@@ -9,10 +9,14 @@ export type AdminValoracionQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminValoracionSearchField;
   includeDeleted?: boolean;
   puntuacion?: number;
   tipoOperacion?: IValoracion['tipoOperacion'];
 };
+
+export const adminValoracionSearchFields = ['user', 'book', 'rating', '_id'] as const;
+export type AdminValoracionSearchField = (typeof adminValoracionSearchFields)[number];
 
 const createValoracion = async (data: Partial<IValoracion>): Promise<IValoracionModel | null> => {
   const { usuarioAutor, usuarioValorado, libro, tipoOperacion, reservationId } = data;
@@ -116,6 +120,7 @@ const getAdminValoraciones = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'user',
   includeDeleted = true,
   puntuacion,
   tipoOperacion,
@@ -130,10 +135,34 @@ const getAdminValoraciones = async ({
 
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { comentario: { $regex: escapedSearch, $options: 'i' } },
-      { tipoOperacion: { $regex: escapedSearch, $options: 'i' } },
-    ];
+    const regex = { $regex: escapedSearch, $options: 'i' };
+
+    switch (searchField) {
+      case 'user': {
+        const users = await Usuario.find({ $or: [{ name: regex }, { email: regex }] }).select(
+          '_id',
+        );
+        const userIds = users.map((user) => user._id);
+        filter.$or = [{ usuarioAutor: { $in: userIds } }, { usuarioValorado: { $in: userIds } }];
+        break;
+      }
+      case 'book': {
+        const books = await Libro.find({ $or: [{ title: regex }, { isbn: regex }] }).select('_id');
+        filter.libro = { $in: books.map((book) => book._id) };
+        break;
+      }
+      case 'rating': {
+        const rating = Number(normalizedSearch);
+        filter.puntuacion =
+          Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : { $exists: false };
+        break;
+      }
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([
@@ -188,6 +217,9 @@ const setValoracionDeleted = async (
   IsDeleted: boolean,
 ): Promise<IValoracionModel | null> => updateAdminValoracion(id, { IsDeleted });
 
+const permanentDeleteValoracion = async (id: string): Promise<IValoracionModel | null> =>
+  Valoracion.findByIdAndDelete(id);
+
 export default {
   createValoracion,
   getValoracionesReceived,
@@ -198,4 +230,5 @@ export default {
   createAdminValoracion,
   updateAdminValoracion,
   setValoracionDeleted,
+  permanentDeleteValoracion,
 };

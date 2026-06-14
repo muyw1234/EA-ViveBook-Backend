@@ -2,10 +2,14 @@ import mongoose, { FilterQuery } from 'mongoose';
 import Libreria, { ILibreriaModel, ILibreria } from '../models/Libreria';
 import { getPagination, PaginatedResult } from './Pagination';
 
+export const adminLibreriaSearchFields = ['name', 'address', '_id'] as const;
+export type AdminLibreriaSearchField = (typeof adminLibreriaSearchFields)[number];
+
 export type AdminLibreriaQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  searchField?: AdminLibreriaSearchField;
   includeDeleted?: boolean;
 };
 
@@ -54,6 +58,7 @@ const getAdminLibrerias = async ({
   page = 1,
   limit = 10,
   search = '',
+  searchField = 'name',
   includeDeleted = true,
 }: AdminLibreriaQuery): Promise<PaginatedResult<ILibreriaModel>> => {
   await migrateLegacyDeletedFlag();
@@ -67,10 +72,21 @@ const getAdminLibrerias = async ({
 
   if (normalizedSearch) {
     const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { name: { $regex: escapedSearch, $options: 'i' } },
-      { address: { $regex: escapedSearch, $options: 'i' } },
-    ];
+
+    switch (searchField) {
+      case 'address':
+        filter.address = { $regex: escapedSearch, $options: 'i' };
+        break;
+      case '_id':
+        filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+          ? new mongoose.Types.ObjectId(normalizedSearch)
+          : { $exists: false };
+        break;
+      case 'name':
+      default:
+        filter.name = { $regex: escapedSearch, $options: 'i' };
+        break;
+    }
   }
 
   const [data, total] = await Promise.all([
@@ -107,6 +123,10 @@ const deleteLibreria = async (libreriaId: string): Promise<ILibreriaModel | null
   return await setLibreriaDeleted(libreriaId, true);
 };
 
+const permanentDeleteLibreria = async (libreriaId: string): Promise<ILibreriaModel | null> => {
+  return await Libreria.findByIdAndDelete(libreriaId);
+};
+
 const restoreLibreria = async (libreriaId: string): Promise<ILibreriaModel | null> => {
   return await setLibreriaDeleted(libreriaId, false);
 };
@@ -129,6 +149,7 @@ export default {
   getAdminLibrerias,
   updateLibreria,
   deleteLibreria,
+  permanentDeleteLibreria,
   restoreLibreria,
   setLibreriaDeleted,
 };

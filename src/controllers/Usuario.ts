@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import UsuarioService from '../services/Usuario';
+import { adminUsuarioSearchFields, AdminUsuarioSearchField } from '../services/Usuario';
 import Usuario from '../models/Usuario';
 import { getPaginationParams, getQueryBoolean } from './Pagination';
 import Logging from '../library/Logging';
@@ -86,12 +87,25 @@ const getAdminUsuarios = async (req: Request, res: Response, next: NextFunction)
   try {
     const { page, limit } = getPaginationParams(req);
     const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'name';
+
+    if (!adminUsuarioSearchFields.includes(requestedSearchField as AdminUsuarioSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
+    }
+
     const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
     const rol = req.query.rol === 'Admin' || req.query.rol === 'User' ? req.query.rol : undefined;
     const usuarios = await UsuarioService.getAdminUsuarios({
       page,
       limit,
       search,
+      searchField: requestedSearchField as AdminUsuarioSearchField,
       includeDeleted,
       rol,
     });

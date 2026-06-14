@@ -81,6 +81,12 @@ router.use(TokenValidation, isAdmin);
  *         name: search
  *         schema: { type: string }
  *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [book, owner, price, status, _id]
+ *         description: Campo seguro por el que se realiza la búsqueda.
+ *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
  *       - in: query
@@ -151,6 +157,30 @@ router.post('/', ValidateJoi(Schemas.post.adminCreate), controller.createAdminPo
  *         $ref: '#/components/responses/NotFound'
  */
 router.patch('/:id/status', ValidateJoi(Schemas.post.deletedStatus), controller.setAdminPostStatus);
+
+/**
+ * @openapi
+ * /admin/posts/{id}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un post
+ *     tags: [Admin - Posts]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Post eliminado definitivamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AdminPostResponse'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:id/permanent', controller.deletePost);
 
 /**
  * @openapi

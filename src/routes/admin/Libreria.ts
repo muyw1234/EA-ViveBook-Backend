@@ -82,7 +82,14 @@ router.use(TokenValidation, isAdmin);
  *       - in: query
  *         name: search
  *         schema: { type: string }
- *         description: Busca en nombre y dirección.
+ *         description: Texto que se buscará en el campo seleccionado.
+ *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [name, address, _id]
+ *           default: name
+ *         description: Campo permitido sobre el que se aplica la búsqueda.
  *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
@@ -159,6 +166,32 @@ router.patch(
   ValidateJoi(Schemas.libreria.status),
   controller.setAdminLibreriaStatus,
 );
+
+/**
+ * @openapi
+ * /admin/librerias/{libreriaId}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente una librería
+ *     description: Elimina físicamente el documento. Esta acción no se puede deshacer.
+ *     tags: [Admin - Librerías]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: libreriaId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Librería eliminada definitivamente.
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:libreriaId/permanent', controller.permanentDeleteAdminLibreria);
 
 /**
  * @openapi

@@ -175,7 +175,14 @@ router.use(TokenValidation, isAdmin);
  *       - in: query
  *         name: search
  *         schema: { type: string }
- *         description: Busca en nombre, email y descripción.
+ *         description: Texto que se buscará en el campo seleccionado.
+ *       - in: query
+ *         name: searchField
+ *         schema:
+ *           type: string
+ *           enum: [name, email, role, _id]
+ *           default: name
+ *         description: Campo permitido sobre el que se aplica la búsqueda.
  *       - in: query
  *         name: includeDeleted
  *         schema: { type: boolean, default: true }
@@ -269,6 +276,34 @@ router.patch(
   ValidateJoi(Schemas.usuario.status),
   controller.setAdminUsuarioStatus,
 );
+
+/**
+ * @openapi
+ * /admin/usuarios/{usuarioId}/permanent:
+ *   delete:
+ *     summary: Elimina definitivamente un usuario
+ *     description: Elimina físicamente el documento. Esta acción no se puede deshacer.
+ *     tags: [Admin - Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: usuarioId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[0-9a-fA-F]{24}$'
+ *     responses:
+ *       200:
+ *         description: Usuario eliminado definitivamente.
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.delete('/:usuarioId/permanent', controller.permanentDeleteUsuario);
 
 /**
  * @openapi
