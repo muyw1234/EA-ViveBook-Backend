@@ -92,6 +92,71 @@ export async function getAllLibros(page = 1, limit = 10): Promise<PaginatedResul
   };
 }
 
+export async function getAdminLibros({
+  page = 1,
+  limit = 10,
+  search = '',
+  searchField = 'title',
+  includeDeleted = true,
+  type,
+  estado,
+}: AdminLibroQuery): Promise<PaginatedResult<ILibroModel>> {
+  const pagination = getPagination(page, limit);
+  const filter: FilterQuery<ILibroModel> = {};
+  const normalizedSearch = search.trim();
+
+  if (!includeDeleted) {
+    filter.IsDeleted = false;
+  }
+
+  if (type) {
+    filter.type = type;
+  }
+
+  if (estado) {
+    filter.estado = estado;
+  }
+
+  if (normalizedSearch) {
+    if (searchField === '_id') {
+      filter._id = mongoose.Types.ObjectId.isValid(normalizedSearch)
+        ? new mongoose.Types.ObjectId(normalizedSearch)
+        : { $exists: false };
+    } else if (searchField === 'author') {
+      const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const authorIds = await AutorModel.find({
+        fullName: { $regex: escapedSearch, $options: 'i' },
+      }).distinct('_id');
+      filter.authors = { $in: authorIds };
+    } else {
+      filter[searchField] = {
+        $regex: normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        $options: 'i',
+      };
+    }
+  }
+
+  const [data, total] = await Promise.all([
+    Libro.find(filter)
+      .sort({ title: 1, _id: 1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('authors', 'fullName')
+      .populate('owner', 'name'),
+    Libro.countDocuments(filter),
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    },
+  };
+}
+
 async function getActiveUserIds(): Promise<string[]> {
   const activeUsers = await Usuario.find({ IsDeleted: false }).select('_id');
   return activeUsers.map((u) => u._id.toString());

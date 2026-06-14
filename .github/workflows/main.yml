@@ -24,14 +24,6 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Set Docker image tag
-        id: vars
-        run: |
-          VERSION="${{ github.event.head_commit.message }}"
-          VERSION="${VERSION#v}"
-          SHORT_SHA="${GITHUB_SHA::7}"
-          echo "tag=${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
-
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
@@ -43,7 +35,7 @@ jobs:
           context: ./
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/vivebook-backend-ea:${{ steps.vars.outputs.tag }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/vivebook-backend-ea:latest
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
