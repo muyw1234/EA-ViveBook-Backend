@@ -224,7 +224,7 @@ export const Schemas = {
       IsDeleted: Joi.boolean().optional(),
       rentalStartDate: Joi.date().optional(),
       rentalEndDate: Joi.date().optional(),
-      imageUrl: Joi.string().optional(),
+      imageUrl: Joi.string().optional().allow(null, ''),
     }),
     update: Joi.object<ILibro>({
       isbn: Joi.string().optional(),
@@ -238,7 +238,7 @@ export const Schemas = {
       IsDeleted: Joi.boolean().optional(),
       rentalStartDate: Joi.date().optional(),
       rentalEndDate: Joi.date().optional(),
-      imageUrl: Joi.string().optional(),
+      imageUrl: Joi.string().optional().allow(null, ''),
     }),
     adminCreate: Joi.object<ILibro>({
       isbn: Joi.string().required(),

@@ -1,6 +1,7 @@
 import mongoose, { FilterQuery } from 'mongoose';
 import Evento, { IEventoModel, IEvento } from '../models/Evento';
 import { getPagination, PaginatedResult } from './Pagination';
+import Usuario from '../models/Usuario';
 
 export const adminEventoSearchFields = ['title', 'eventDate', 'address', '_id'] as const;
 export type AdminEventoSearchField = (typeof adminEventoSearchFields)[number];
@@ -168,20 +169,23 @@ const participarEvento = async (
   eventoId: string,
   usuarioId: string,
 ): Promise<IEventoModel | null> => {
+  await Usuario.findByIdAndUpdate(usuarioId, { $addToSet: { eventos: eventoId } });
+
   return await Evento.findByIdAndUpdate(
     eventoId,
     { $addToSet: { participant: usuarioId } },
     { new: true },
-  );
+  ).populate('participant', 'name email avatar');
 };
 
 const leaveEvento = async (eventoId: string, usuarioId: string): Promise<IEventoModel | null> => {
-  const evento = await Evento.findByIdAndUpdate(
+  await Usuario.findByIdAndUpdate(usuarioId, { $pull: { eventos: eventoId } });
+
+  return await Evento.findByIdAndUpdate(
     eventoId,
     { $pull: { participant: usuarioId } },
     { new: true },
-  ).populate('participant', 'name email');
-  return evento;
+  ).populate('participant', 'name email avatar');
 };
 
 export default {
