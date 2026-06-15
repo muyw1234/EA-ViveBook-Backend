@@ -1,6 +1,7 @@
-import express, { Router } from 'express';
-import { Schema } from 'mongoose';
+import express from 'express';
 import Image from '../controllers/Image';
+import { TokenValidation } from '../middleware/verifyToken';
+
 const router = express.Router();
 
 /**
@@ -47,6 +48,6 @@ const router = express.Router();
  *                   description: Mensaje descriptivo del error.
  *                   example: "Error al generar el token de imágenes"
  */
-router.get('/token', /* Meter aqui la validacion de roles y autenticacion */ Image.getToken);
+router.get('/token', TokenValidation, Image.getToken);
 
 export default router;

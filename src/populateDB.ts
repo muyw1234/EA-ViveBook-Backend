@@ -76,7 +76,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[0],
       name: 'Administradora ViveBook',
-      email: 'admin.demo@vivebook.test',
+      email: 'admin@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=47',
@@ -90,7 +90,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[1],
       name: 'Lucía Ferrer',
-      email: 'lucia.demo@vivebook.test',
+      email: 'lucia@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=32',
@@ -104,7 +104,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[2],
       name: 'Diego Navarro',
-      email: 'diego.demo@vivebook.test',
+      email: 'diego@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=12',
@@ -118,7 +118,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[3],
       name: 'Marta Pons',
-      email: 'marta.demo@vivebook.test',
+      email: 'marta@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=44',
@@ -132,7 +132,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[4],
       name: 'Álex Romero',
-      email: 'alex.demo@vivebook.test',
+      email: 'alex@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=15',
@@ -146,7 +146,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[5],
       name: 'Sofía Blanco',
-      email: 'sofia.demo@vivebook.test',
+      email: 'sofia@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=25',
@@ -160,7 +160,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[6],
       name: 'Pablo Serra',
-      email: 'pablo.demo@vivebook.test',
+      email: 'pablo@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=5',
@@ -174,7 +174,7 @@ const populateDB = async (): Promise<void> => {
     {
       _id: ids.usuarios[7],
       name: 'Gestora Editorial',
-      email: 'gestora.demo@vivebook.test',
+      email: 'gestora@demo.vivebook.com',
       password,
       authProvider: 'local',
       avatar: 'https://i.pravatar.cc/300?img=49',
@@ -582,7 +582,7 @@ const populateDB = async (): Promise<void> => {
   console.log(`Usuarios: ${ids.usuarios.length}`);
   console.log(`Libros: ${ids.libros.length}`);
   console.log(`Contraseña común: ${DEMO_PASSWORD}`);
-  console.log('Administrador: admin.demo@vivebook.test');
+  console.log('Administrador: admin@demo.vivebook.com');
 };
 
 populateDB()
