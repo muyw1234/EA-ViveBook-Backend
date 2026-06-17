@@ -1,43 +1,12 @@
-import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-import cors from 'cors';
-import pinoHttp from 'pino-http';
 import { config } from './config/config';
 import Logging from './library/Logging';
-import usuarioRoutes from './routes/Usuario';
-import libreriaRoutes from './routes/Libreria';
-import libroRoutes from './routes/Libro';
-import autorRoutes from './routes/Autor';
-import eventoRoutes from './routes/Evento';
-import chatRoutes from './routes/Chat';
-import mensajeRoutes from './routes/Mensaje';
-import authRoutes from './routes/auth';
-import postRoutes from './routes/Post';
-import matomoRoute from './routes/Matomo';
-import valoracionRoutes from './routes/Valoracion';
-import imageRoutes from './routes/Image';
-import retosRoutes from './routes/Retos';
-import reservaRoutes from './routes/Reserva';
-import messageRequestRoutes from './routes/MessageRequest';
-import recomendacionRoutes from './routes/Recomendacion';
-import adminAutorRoutes from './routes/admin/Autor';
-import adminLibroRoutes from './routes/admin/Libro';
-import adminUsuarioRoutes from './routes/admin/Usuario';
-import adminLibreriaRoutes from './routes/admin/Libreria';
-import adminPostRoutes from './routes/admin/Post';
-import adminEventoRoutes from './routes/admin/Evento';
-import adminValoracionRoutes from './routes/admin/Valoracion';
-import adminReservaRoutes from './routes/admin/Reserva';
-import adminRetoRoutes from './routes/admin/Reto';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './swagger';
 import { socketHandler } from './services/SocketHandler';
 import { ensureGlobalChat } from './library/ChatUtils';
 import { inicializarRetos } from './services/Retos';
-
-const router = express();
+import { createApp } from './app';
 
 mongoose
   .connect(config.mongo.url, { retryWrites: true, w: 'majority' })
@@ -51,54 +20,8 @@ mongoose
   .catch((error) => Logging.error(error));
 
 const StartServer = () => {
-  router.use(pinoHttp({ logger: Logging.logger }));
-
-  router.use(express.urlencoded({ extended: true }));
-  router.use(express.json());
-
-  router.use(cors());
-
-  router.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-  router.use('/usuarios', usuarioRoutes);
-  router.use('/librerias', libreriaRoutes);
-  router.use('/libros', libroRoutes);
-  router.use('/autores', autorRoutes);
-  router.use('/eventos', eventoRoutes);
-  router.use('/chats', chatRoutes);
-  router.use('/mensajes', mensajeRoutes);
-  router.use('/auth', authRoutes);
-  router.use('/posts', postRoutes);
-  router.use('/valoraciones', valoracionRoutes);
-  router.use('/image', imageRoutes);
-  router.use('/matomo', matomoRoute);
-  router.use('/retos', retosRoutes);
-  router.use('/reservas', reservaRoutes);
-  router.use('/message-requests', messageRequestRoutes);
-  router.use('/recomendaciones', recomendacionRoutes);
-  router.use('/admin/autores', adminAutorRoutes);
-  router.use('/admin/libros', adminLibroRoutes);
-  router.use('/admin/usuarios', adminUsuarioRoutes);
-  router.use('/admin/librerias', adminLibreriaRoutes);
-  router.use('/admin/posts', adminPostRoutes);
-  router.use('/admin/eventos', adminEventoRoutes);
-  router.use('/admin/valoraciones', adminValoracionRoutes);
-  router.use('/admin/reservas', adminReservaRoutes);
-  router.use('/admin/retos', adminRetoRoutes);
-
-  router.get('/ping', (req, res, next) => res.status(200).json({ hello: 'world' }));
-
-  router.use((req, res, next) => {
-    const error = new Error('Not found');
-
-    Logging.error(error);
-
-    res.status(404).json({
-      message: error.message,
-    });
-  });
-
-  const httpServer = http.createServer(router);
+  const app = createApp();
+  const httpServer = http.createServer(app);
   const io = new Server(httpServer, {
     cors: {
       origin: '*',
@@ -106,7 +29,7 @@ const StartServer = () => {
     },
   });
 
-  router.set('io', io);
+  app.set('io', io);
   socketHandler(io);
 
   httpServer.listen(config.server.port, '0.0.0.0', () => {
