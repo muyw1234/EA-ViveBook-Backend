@@ -109,7 +109,7 @@ const StartServer = () => {
   router.set('io', io);
   socketHandler(io);
 
-  httpServer.listen(config.server.port, () => {
+  httpServer.listen(config.server.port, '0.0.0.0', () => {
     Logging.info(`Server is running on port ${config.server.port}`);
     Logging.info(`Access Swagger at http://localhost:${config.server.port}/swagger`);
   });
