@@ -37,9 +37,16 @@ const getAllEventos = async (req: Request, res: Response, next: NextFunction) =>
   try {
     const { page, limit } = getPaginationParams(req);
     const filter: any = { IsDeleted: { $ne: true } };
+    let sort: any = { eventDate: 1 };
 
-    if (req.query.upcoming === 'true') {
+    const timeFilter = req.query.timeFilter as string;
+
+    if (timeFilter === 'upcoming') {
       filter.eventDate = { $gte: new Date() };
+      sort = { eventDate: 1 };
+    } else if (timeFilter === 'expired') {
+      filter.eventDate = { $lt: new Date() };
+      sort = { eventDate: -1 };
     }
 
     if (req.query.search) {
@@ -49,11 +56,6 @@ const getAllEventos = async (req: Request, res: Response, next: NextFunction) =>
         { description: searchRegex },
         { direccionExacta: searchRegex },
       ];
-    }
-
-    let sort: any = { _id: 1 };
-    if (req.query.sort === 'eventDate') {
-      sort = { eventDate: 1 };
     }
 
     const eventos = await EventoService.getAllEventos(page, limit, filter, sort);

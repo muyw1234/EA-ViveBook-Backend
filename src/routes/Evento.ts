@@ -114,6 +114,14 @@ const router = express.Router();
  *           maximum: 100
  *           default: 10
  *           example: 3
+ *       - in: query
+ *         name: timeFilter
+ *         required: false
+ *         description: Filtrar eventos por tiempo (upcoming o expired)
+ *         schema:
+ *           type: string
+ *           enum: [upcoming, expired]
+ *           default: upcoming
  *     responses:
  *       200:
  *         description: OK
