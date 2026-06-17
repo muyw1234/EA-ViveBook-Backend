@@ -146,21 +146,12 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
       const parts = idToken.split('_');
       socialUser = {
         email: parts[1],
-        name: parts[2]
-          ? decodeURIComponent(parts[2])
-          : provider === 'google'
-            ? 'Usuario de Google'
-            : 'Usuario de Apple',
+        name: parts[2] ? decodeURIComponent(parts[2]) : 'Usuario de Google',
         sub: parts[3] || 'mock-sub-123',
         picture: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
       };
     } else if (provider === 'google') {
       socialUser = await socialAuthService.verifyGoogleToken(idToken);
-    } else if (provider === 'apple') {
-      socialUser = await socialAuthService.verifyAppleToken(idToken);
-      if (name && !socialUser.name) {
-        socialUser.name = name;
-      }
     } else {
       return sendError(res, 'Invalid provider', 'Proveedor social no soportado', 400);
     }
@@ -168,10 +159,6 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
     let user: IUsuarioModel | null = null;
     if (socialUser.email) {
       user = await UsuarioService.getUsuarioByEmail(socialUser.email);
-    }
-
-    if (!user && provider === 'apple' && !socialUser.email) {
-      user = await Usuario.findOne({ appleId: socialUser.sub });
     }
 
     if (!user) {
@@ -184,8 +171,6 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
 
       if (provider === 'google') {
         newUserObj.googleId = socialUser.sub;
-      } else if (provider === 'apple') {
-        newUserObj.appleId = socialUser.sub;
       }
 
       user = new Usuario(newUserObj);
@@ -194,9 +179,6 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
       let updated = false;
       if (provider === 'google' && !user.googleId) {
         user.googleId = socialUser.sub;
-        updated = true;
-      } else if (provider === 'apple' && !user.appleId) {
-        user.appleId = socialUser.sub;
         updated = true;
       }
       if (user.IsDeleted) {
