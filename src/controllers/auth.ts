@@ -146,9 +146,7 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
       const parts = idToken.split('_');
       socialUser = {
         email: parts[1],
-        name: parts[2]
-          ? decodeURIComponent(parts[2])
-          : 'Usuario de Google',
+        name: parts[2] ? decodeURIComponent(parts[2]) : 'Usuario de Google',
         sub: parts[3] || 'mock-sub-123',
         picture: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
       };
@@ -162,8 +160,6 @@ export const socialLogin = async (req: Request, res: Response, next: NextFunctio
     if (socialUser.email) {
       user = await UsuarioService.getUsuarioByEmail(socialUser.email);
     }
-
-
 
     if (!user) {
       const newUserObj: any = {
