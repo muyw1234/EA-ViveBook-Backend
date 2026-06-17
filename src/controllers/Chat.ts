@@ -33,18 +33,33 @@ const getChat = async (req: Request, res: Response, next: NextFunction) => {
 
 const getAllChats = async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.userId;
-  if (!userId) {
-    return sendError(res, 'No autorizado', 'Unauthorized', 401);
-  }
+  if (!userId) return sendError(res, 'No autorizado', 'Unauthorized', 401);
+
   try {
-    // Return only chats where current user is a participant and not global chat
     const chats = await Chat.find({
       participants: userId,
+      evento: { $exists: false },
       _id: { $ne: '000000000000000000000001' },
     }).populate('participants libro');
     return sendSuccess(res, chats, 'Listado de chats obtenido con éxito');
   } catch (error) {
     return sendError(res, error, 'Error al recuperar la lista de chats');
+  }
+};
+
+const getMisEventosChats = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.userId;
+  if (!userId) return sendError(res, 'No autorizado', 'Unauthorized', 401);
+
+  try {
+    const chatsEventos = await Chat.find({
+      participants: userId,
+      evento: { $exists: true },
+    }).populate('evento');
+
+    return sendSuccess(res, chatsEventos, 'Chats de eventos recuperados con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar los chats de eventos');
   }
 };
 
@@ -166,6 +181,7 @@ export default {
   createChat,
   getChat,
   getAllChats,
+  getMisEventosChats,
   deleteChat,
   getChatMessages,
   sendChatMessage,

@@ -2,6 +2,7 @@ import mongoose, { FilterQuery } from 'mongoose';
 import Evento, { IEventoModel, IEvento } from '../models/Evento';
 import { getPagination, PaginatedResult } from './Pagination';
 import Usuario from '../models/Usuario';
+import Chat from '../models/Chat';
 
 export const adminEventoSearchFields = ['title', 'eventDate', 'address', '_id'] as const;
 export type AdminEventoSearchField = (typeof adminEventoSearchFields)[number];
@@ -165,27 +166,35 @@ const setEventoDeleted = async (
   IsDeleted: boolean,
 ): Promise<IEventoModel | null> => updateEvento(eventoId, { IsDeleted });
 
-const participarEvento = async (
-  eventoId: string,
-  usuarioId: string,
-): Promise<IEventoModel | null> => {
-  await Usuario.findByIdAndUpdate(usuarioId, { $addToSet: { eventos: eventoId } });
-
-  return await Evento.findByIdAndUpdate(
+export const participarEvento = async (eventoId: string, usuarioId: string) => {
+  const evento = await Evento.findByIdAndUpdate(
     eventoId,
     { $addToSet: { participant: usuarioId } },
     { new: true },
-  ).populate('participant', 'name email avatar');
+  );
+
+  await Chat.findOneAndUpdate(
+    { evento: eventoId },
+    {
+      $setOnInsert: { title: `Grupo: ${evento?.title || 'Evento'}` },
+      $addToSet: { participants: usuarioId },
+    },
+    { upsert: true, new: true },
+  );
+
+  return evento;
 };
 
-const leaveEvento = async (eventoId: string, usuarioId: string): Promise<IEventoModel | null> => {
-  await Usuario.findByIdAndUpdate(usuarioId, { $pull: { eventos: eventoId } });
-
-  return await Evento.findByIdAndUpdate(
+export const leaveEvento = async (eventoId: string, usuarioId: string) => {
+  const evento = await Evento.findByIdAndUpdate(
     eventoId,
     { $pull: { participant: usuarioId } },
     { new: true },
-  ).populate('participant', 'name email avatar');
+  );
+
+  await Chat.findOneAndUpdate({ evento: eventoId }, { $pull: { participants: usuarioId } });
+
+  return evento;
 };
 
 export default {

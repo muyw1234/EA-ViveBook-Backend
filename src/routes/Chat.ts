@@ -8,6 +8,9 @@ const router = express.Router();
 router.post('/', TokenValidation, ValidateJoi(Schemas.chat.create), controller.createChat);
 router.get('/', TokenValidation, controller.getAllChats);
 router.get('/usuario/:usuarioId', TokenValidation, controller.getAllChats); // Fallback compatible
+
+router.get('/eventos/mis-chats', TokenValidation, controller.getMisEventosChats);
+
 router.get('/:chatId', TokenValidation, controller.getChat);
 router.delete('/:chatId', TokenValidation, controller.deleteChat);
 

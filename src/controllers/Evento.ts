@@ -297,6 +297,9 @@ const participarEvento = async (req: Request, res: Response, next: NextFunction)
 
     return sendSuccess(res, evento, 'Te has apuntado al evento con éxito');
   } catch (error) {
+    console.error('--- ERROR EN PARTICIPAR EVENTO ---');
+    console.error(error);
+    console.error('----------------------------------');
     return sendError(res, error, 'Error al intentar registrar la participación');
   }
 };
