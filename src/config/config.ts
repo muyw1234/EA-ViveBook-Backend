@@ -33,6 +33,7 @@ const WEAVIATE_SCHEME = process.env.WEAVIATE_SCHEME || 'http';
 const LLM_BASE_URL = process.env.LLM_BASE_URL || 'http://localhost:8080';
 const LLM_MODEL = process.env.LLM_MODEL || 'qwen2.5:14b';
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'embeddinggemma';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 
 export const config = {
   mongo: {
@@ -68,5 +69,8 @@ export const config = {
     baseUrl: LLM_BASE_URL,
     llmModel: LLM_MODEL,
     embeddingModel: EMBEDDING_MODEL,
+  },
+  google: {
+    clientId: GOOGLE_CLIENT_ID,
   },
 };
