@@ -44,8 +44,9 @@ export async function createLibro(data: Partial<ILibro>): Promise<ILibro | null>
 }
 export async function createLibroByIsbn(isbn: string): Promise<ILibroModel | null> {
   // Primero comprobamos que el libro existe o no. No poner esto al principio no me daba error, pero es por si acaso.
-  const isFound = await getLibroByIsbn(isbn);
-  if (isFound !== null) return isFound;
+  /* const isFound = await getLibroByIsbn(isbn);
+  Logging.info(`Book found? ${isFound !== null}`);
+  if (isFound !== null) return isFound; */
   // Si no existe entonces lo creamos.
   const data: ILibro = await callOpenLibraryBookApi(isbn);
   //Logging.info(`Libro found: ${JSON.stringify(data)}`);

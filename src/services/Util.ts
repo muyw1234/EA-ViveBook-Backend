@@ -47,7 +47,7 @@ export async function callGoogleApi(isbn: string): Promise<ILibro> {
 
 export async function callOpenLibraryAuthorApi(olid: string): Promise<IAutor> {
   const headers = { accept: 'application/json' };
-  return axios
+  return await axios
     .get(formatUrlOpenLibraryAutor(olid), { headers: headers })
     .then((response) => {
       const buffer = response.data;
@@ -85,7 +85,9 @@ export async function callOpenLibraryBookApi(isbn: string): Promise<ILibro> {
       return libro;
     })
     .catch((error) => {
-      Logging.error(`Couldn't retrieve data from ${formatUrlOpenLibraryBook(isbn)}`);
+      Logging.error(
+        `Couldn't retrieve data from ${formatUrlOpenLibraryBook(isbn)}\nError: ${error}`,
+      );
       throw error;
     });
 }
