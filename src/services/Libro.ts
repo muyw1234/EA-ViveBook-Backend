@@ -1,7 +1,7 @@
 import mongoose, { FilterQuery } from 'mongoose';
 import Libro, { ILibroModel, ILibro } from '../models/Libro';
 import Usuario from '../models/Usuario';
-import { callOpenLibraryBookApi } from './Util';
+import { callOpenLibraryBookApi, callOpenLibraryBookMetadataApi } from './Util';
 import Logging from '../library/Logging';
 import Autor from './Autor';
 import { getPagination, PaginatedResult } from './Pagination';
@@ -18,6 +18,13 @@ export type AdminLibroQuery = {
   includeDeleted?: boolean;
   type?: ILibro['type'];
   estado?: string;
+};
+
+export type LibroIsbnMetadata = {
+  isbn: string;
+  title: string;
+  authors: string[];
+  imageUrl: string;
 };
 
 export async function createLibro(data: Partial<ILibro>): Promise<ILibro | null> {
@@ -64,6 +71,10 @@ export async function createLibroByIsbn(isbn: string): Promise<ILibroModel | nul
     ...data,
   });
   return (await libro.save()).populate('authors');
+}
+
+export async function getLibroMetadataByIsbn(isbn: string): Promise<LibroIsbnMetadata> {
+  return await callOpenLibraryBookMetadataApi(isbn);
 }
 
 export async function getLibro(id: string): Promise<ILibro | null> {
@@ -367,6 +378,7 @@ export async function rentLibro(libroId: string, userId: string): Promise<boolea
 export default {
   createLibro,
   createLibroByIsbn,
+  getLibroMetadataByIsbn,
   getLibro,
   getAllLibros,
   getAdminLibros,

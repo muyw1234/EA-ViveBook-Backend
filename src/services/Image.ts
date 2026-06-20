@@ -1,14 +1,5 @@
-import {
-  v2 as cloudinary,
-  UploadApiErrorResponse,
-  UploadApiResponse,
-  UploadResponseCallback,
-  UploadStream,
-} from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { config } from '../config/config';
-import Logging from '../library/Logging';
-import { NextFunction, Request, Response } from 'express';
-import { timeStamp } from 'console';
 
 export interface Token {
   timestamp: string;
@@ -43,5 +34,11 @@ export default class ImageService {
       config.cloudinary.secret,
     );
     return { timestamp: timestamp.toString(), signature: signature };
+  }
+
+  public async uploadRemoteImage(imageUrl: string): Promise<UploadApiResponse> {
+    return await cloudinary.uploader.upload(imageUrl, {
+      resource_type: 'image',
+    });
   }
 }

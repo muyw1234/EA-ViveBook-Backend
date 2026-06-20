@@ -457,6 +457,63 @@ router.put('/restore/:libroId', controller.restoreLibro);
 
 /**
  * @openapi
+ * /libros/isbn/{isbn}/metadata:
+ *   get:
+ *     summary: Obtener metadata de un libro a partir de un ISBN
+ *     description: Consulta OpenLibrary y devuelve datos basicos del libro sin crearlo en la base de datos. Esta ruta esta pensada para autocompletar formularios antes de guardar el libro.
+ *     tags:
+ *       - Libros
+ *     parameters:
+ *       - in: path
+ *         name: isbn
+ *         required: true
+ *         description: ISBN del libro. Puede enviarse con o sin guiones.
+ *         schema:
+ *           type: string
+ *           example: "9780140328721"
+ *     responses:
+ *       200:
+ *         description: Metadata obtenida correctamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 status:
+ *                   type: number
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Metadata del libro obtenida con exito
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     isbn:
+ *                       type: string
+ *                       example: "9780140328721"
+ *                     title:
+ *                       type: string
+ *                       example: Matilda
+ *                     authors:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["Roald Dahl"]
+ *                     imageUrl:
+ *                       type: string
+ *                       example: "https://covers.openlibrary.org/b/isbn/9780140328721-L.jpg"
+ *       404:
+ *         description: No se encontro metadata para el ISBN indicado.
+ *       500:
+ *         description: Error al consultar OpenLibrary.
+ */
+router.get('/isbn/:isbn/metadata', controller.getLibroMetadataByIsbn);
+
+/**
+ * @openapi
  * /libros/isbn/{isbn}:
  *   get:
  *     summary: Crea un libro a partir de un ISBN

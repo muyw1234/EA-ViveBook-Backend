@@ -50,4 +50,38 @@ const router = express.Router();
  */
 router.get('/token', TokenValidation, Image.getToken);
 
+/**
+ * @openapi
+ * /image/upload-remote:
+ *   post:
+ *     summary: Subir una imagen remota a Cloudinary
+ *     description: Recibe una URL de imagen externa y la sube a Cloudinary desde el Backend para evitar exponer credenciales privadas en el cliente.
+ *     tags:
+ *       - Imagenes
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageUrl
+ *             properties:
+ *               imageUrl:
+ *                 type: string
+ *                 example: "https://covers.openlibrary.org/b/isbn/9780140328721-L.jpg"
+ *     responses:
+ *       201:
+ *         description: Imagen remota subida correctamente a Cloudinary.
+ *       400:
+ *         description: La URL enviada no es valida.
+ *       401:
+ *         description: No autorizado.
+ *       500:
+ *         description: Error al subir la imagen remota.
+ */
+router.post('/upload-remote', TokenValidation, Image.uploadRemoteImage);
+
 export default router;

@@ -149,8 +149,8 @@ const createAdminLibro = async (req: Request, res: Response, next: NextFunction)
 const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = getPaginationParams(req);
-    const userId = req.userId;
-
+    const excludeOwn = getQueryBoolean(req.query.excludeOwn, false);
+    const excludeOwnerId = excludeOwn ? req.userId : undefined;
     const extraFilters: any = {};
     if (req.query.type) {
       extraFilters.type = req.query.type;
@@ -165,7 +165,12 @@ const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextF
       }
     }
 
-    const libros = await LibroService.getAllLibros_NOT_Deleted(page, limit, userId, extraFilters);
+    const libros = await LibroService.getAllLibros_NOT_Deleted(
+      page,
+      limit,
+      excludeOwnerId,
+      extraFilters,
+    );
 
     return sendSuccess(res, libros, 'Libros activos obtenidos con éxito');
   } catch (error) {
@@ -175,11 +180,12 @@ const getAllLibros_NOT_Deleted = async (req: Request, res: Response, next: NextF
 
 const getLibrosByType = async (req: Request, res: Response, next: NextFunction) => {
   const type = req.params.type;
-  const userId = req.userId;
   const { page, limit } = getPaginationParams(req);
+  const excludeOwn = getQueryBoolean(req.query.excludeOwn, false);
+  const excludeOwnerId = excludeOwn ? req.userId : undefined;
 
   try {
-    const libros = await LibroService.getLibrosByType(type, page, limit, userId);
+    const libros = await LibroService.getLibrosByType(type, page, limit, excludeOwnerId);
 
     return sendSuccess(res, libros, `Libros de tipo '${type}' obtenidos con éxito`);
   } catch (error) {
@@ -263,6 +269,30 @@ const setLibroStatus = async (req: Request, res: Response, next: NextFunction) =
     return sendError(res, error, 'Error al cambiar el estado del libro');
   }
 };
+
+export async function getLibroMetadataByIsbn(req: Request, res: Response, next: NextFunction) {
+  const isbn = req.params.isbn;
+
+  try {
+    const metadata = await LibroService.getLibroMetadataByIsbn(isbn);
+
+    return sendSuccess(res, metadata, 'Metadata del libro obtenida con exito');
+  } catch (error) {
+    const responseStatus =
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as { response?: { status?: unknown } }).response?.status === 'number'
+        ? (error as { response: { status: number } }).response.status
+        : undefined;
+
+    if (responseStatus === 404) {
+      return sendError(res, error, 'No se encontro metadata para el ISBN indicado', 404);
+    }
+
+    return sendError(res, error, 'Error al consultar metadata del libro por ISBN');
+  }
+}
 
 export async function createLibroByIsbn(req: Request, res: Response, next: NextFunction) {
   const isbn = req.params.isbn;
@@ -409,6 +439,7 @@ export default {
   restoreLibro,
   deactivateLibro,
   setLibroStatus,
+  getLibroMetadataByIsbn,
   createLibroByIsbn,
   searchLibroByTitle,
   buyLibro,
