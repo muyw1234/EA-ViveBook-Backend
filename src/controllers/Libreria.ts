@@ -1,69 +1,199 @@
 import { NextFunction, Request, Response } from 'express';
-import mongoose from 'mongoose';
 import LibreriaService from '../services/Libreria';
-import { getPaginationParams } from './Pagination';
+import { adminLibreriaSearchFields, AdminLibreriaSearchField } from '../services/Libreria';
+import { getPaginationParams, getQueryBoolean } from './Pagination';
+import { sendError, sendSuccess } from '../library/ApiResponse';
 
 const createLibreria = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const libreria = await LibreriaService.createLibreria(req.body);
-        return res.status(201).json(libreria);
-    } catch (error) {
-        return res.status(500).json({ error });
-    }
+  try {
+    const libreria = await LibreriaService.createLibreria(req.body);
+    return sendSuccess(res, libreria, 'Libreria creada con exito', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear la libreria');
+  }
 };
 
 const getLibreria = async (req: Request, res: Response, next: NextFunction) => {
-    const libreriaId = req.params.libreriaId;
-    try {
-        const libreria = await LibreriaService.getLibreria(libreriaId);
-        return libreria ? res.status(200).json(libreria) : res.status(404).json({ message: 'not found' });
-    } catch (error) {
-        return res.status(500).json({ error });
+  const libreriaId = req.params.libreriaId;
+  try {
+    const libreria = await LibreriaService.getLibreria(libreriaId);
+    if (!libreria) {
+      return sendError(res, 'La libreria solicitada no existe', 'Not Found', 404);
     }
+    return sendSuccess(res, libreria, 'Libreria obtenida con exito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar la libreria');
+  }
 };
 
 const getAllLibrerias = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { page, limit } = getPaginationParams(req);
-        const librerias = await LibreriaService.getAllLibrerias(page, limit);
-        return res.status(200).json(librerias);
-    } catch (error) {
-        return res.status(500).json({ error });
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const librerias = await LibreriaService.getAllLibrerias(page, limit);
+    return sendSuccess(res, librerias, 'Listado de librerias obtenido con exito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado de librerias');
+  }
+};
+
+const getAdminLibrerias = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit } = getPaginationParams(req);
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const requestedSearchField =
+      typeof req.query.searchField === 'string' ? req.query.searchField : 'name';
+
+    if (!adminLibreriaSearchFields.includes(requestedSearchField as AdminLibreriaSearchField)) {
+      return sendError(
+        res,
+        `Campo de búsqueda no permitido: ${requestedSearchField}`,
+        'Bad Request',
+        400,
+      );
     }
+
+    const includeDeleted = getQueryBoolean(req.query.includeDeleted, true);
+    const librerias = await LibreriaService.getAdminLibrerias({
+      page,
+      limit,
+      search,
+      searchField: requestedSearchField as AdminLibreriaSearchField,
+      includeDeleted,
+    });
+
+    return sendSuccess(res, librerias, 'Listado administrativo de librerías obtenido con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar el listado administrativo de librerías');
+  }
+};
+
+const createAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.createLibreria(req.body);
+    return sendSuccess(res, libreria, 'Librería creada desde el BackOffice', 201);
+  } catch (error) {
+    return sendError(res, error, 'No se pudo crear la librería desde el BackOffice');
+  }
+};
+
+const getAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.getLibreria(req.params.libreriaId);
+    if (!libreria) {
+      return sendError(res, 'La librería solicitada no existe', 'Not Found', 404);
+    }
+    return sendSuccess(res, libreria, 'Librería obtenida con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al recuperar la librería');
+  }
+};
+
+const updateAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.updateLibreria(req.params.libreriaId, req.body);
+    if (!libreria) {
+      return sendError(res, 'No se encontró la librería para actualizar', 'Not Found', 404);
+    }
+    return sendSuccess(res, libreria, 'Librería actualizada con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar la librería');
+  }
+};
+
+const deactivateAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.setLibreriaDeleted(req.params.libreriaId, true);
+    if (!libreria) {
+      return sendError(res, 'No se encontró la librería para desactivar', 'Not Found', 404);
+    }
+    return sendSuccess(res, libreria, 'Librería desactivada con éxito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar la librería');
+  }
+};
+
+const setAdminLibreriaStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.setLibreriaDeleted(
+      req.params.libreriaId,
+      req.body.IsDeleted,
+    );
+    if (!libreria) {
+      return sendError(res, 'No se encontró la librería para cambiar su estado', 'Not Found', 404);
+    }
+    return sendSuccess(
+      res,
+      libreria,
+      libreria.IsDeleted ? 'Librería desactivada con éxito' : 'Librería activada con éxito',
+    );
+  } catch (error) {
+    return sendError(res, error, 'Error al cambiar el estado de la librería');
+  }
+};
+
+const permanentDeleteAdminLibreria = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const libreria = await LibreriaService.permanentDeleteLibreria(req.params.libreriaId);
+    if (!libreria) {
+      return sendError(res, 'No se encontró la librería para eliminar', 'Not Found', 404);
+    }
+    return sendSuccess(res, null, 'Librería eliminada definitivamente');
+  } catch (error) {
+    return sendError(res, error, 'Error al eliminar definitivamente la librería');
+  }
 };
 
 const updateLibreria = async (req: Request, res: Response, next: NextFunction) => {
-    const libreriaId = req.params.libreriaId;
-    try {
-        const libreria = await LibreriaService.updateLibreria(libreriaId, req.body);
-        if (libreria) {
-            return res.status(201).json(libreria);
-        } else {
-            return res.status(404).json({ message: 'not found' });
-        }
-    } catch (error) {
-        return res.status(500).json({ error });
+  const libreriaId = req.params.libreriaId;
+  try {
+    const libreria = await LibreriaService.updateLibreria(libreriaId, req.body);
+    if (!libreria) {
+      return sendError(res, 'No se encontro la libreria para actualizar', 'Not Found', 404);
     }
+    return sendSuccess(res, libreria, 'Libreria actualizada con exito');
+  } catch (error) {
+    return sendError(res, error, 'Error al actualizar la libreria');
+  }
 };
 
 const deleteLibreria = async (req: Request, res: Response, next: NextFunction) => {
-    const libreriaId = req.params.libreriaId;
-    try {
-        const libreria = await LibreriaService.deleteLibreria(libreriaId);
-        return libreria ? res.status(201).json(libreria) : res.status(404).json({ message: 'not found' });
-    } catch (error) {
-        return res.status(500).json({ error });
+  const libreriaId = req.params.libreriaId;
+  try {
+    const libreria = await LibreriaService.deleteLibreria(libreriaId);
+    if (!libreria) {
+      return sendError(res, 'No se encontro la libreria para eliminar', 'Not Found', 404);
     }
+    return sendSuccess(res, libreria, 'Libreria desactivada con exito');
+  } catch (error) {
+    return sendError(res, error, 'Error al desactivar la libreria');
+  }
 };
 
 const restoreLibreria = async (req: Request, res: Response, next: NextFunction) => {
-    const libreriaId = req.params.libreriaId;
-    try {        
-        const libreria = await LibreriaService.restoreLibreria(libreriaId);
-        return libreria ? res.status(200).json(libreria) : res.status(404).json({ message: 'not found' });
-    } catch (error) {
-        return res.status(500).json({ error });
+  const libreriaId = req.params.libreriaId;
+  try {
+    const libreria = await LibreriaService.restoreLibreria(libreriaId);
+    if (!libreria) {
+      return sendError(res, 'No se encontro la libreria para restaurar', 'Not Found', 404);
     }
+    return sendSuccess(res, libreria, 'Libreria restaurada con exito');
+  } catch (error) {
+    return sendError(res, error, 'Error al restaurar la libreria');
+  }
 };
 
-export default { createLibreria, getLibreria, getAllLibrerias, updateLibreria, deleteLibreria, restoreLibreria };
+export default {
+  createLibreria,
+  getLibreria,
+  getAllLibrerias,
+  getAdminLibrerias,
+  createAdminLibreria,
+  getAdminLibreria,
+  updateAdminLibreria,
+  deactivateAdminLibreria,
+  setAdminLibreriaStatus,
+  permanentDeleteAdminLibreria,
+  updateLibreria,
+  deleteLibreria,
+  restoreLibreria,
+};
