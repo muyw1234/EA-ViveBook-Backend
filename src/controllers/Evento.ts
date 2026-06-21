@@ -7,10 +7,45 @@ import { actualizarProgresoRetos } from '../services/Retos';
 import { sendPushNotification } from '../services/NotificationService';
 import Usuario from '../models/Usuario';
 import Evento from '../models/Evento';
+import admin from 'firebase-admin';
+import path from 'path';
+import Usuario from '../models/Usuario';
 
 const createEvento = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId;
   try {
     const evento = await EventoService.createEvento(req.body);
+
+    try {
+      const userFilter = userId ? { _id: { $ne: userId } } : {};
+      const usuariosConToken = await Usuario.find({
+        fcmToken: { $exists: true, $ne: null },
+        ...userFilter,
+      });
+
+      const tokensDestinatarios = usuariosConToken
+        .map((user) => (user as any).fcmToken)
+        .filter((token) => token !== undefined && token !== '');
+
+      if (tokensDestinatarios.length > 0) {
+        const titleEvento = (evento as any).title || (evento as any).name || 'Sin título';
+        const mensajePush = {
+          notification: {
+            title: '📢 ¡Nuevo evento en EA-VIVEBOOK!',
+            body: `Se ha creado: "${titleEvento}". ¡Entra a echarle un vistazo!`,
+          },
+          tokens: tokensDestinatarios,
+        };
+
+        const response = await admin.messaging().sendEachForMulticast(mensajePush);
+        console.log(
+          `FCM: Notificaciones enviadas. Éxito: ${response.successCount}, Fallos: ${response.failureCount}`,
+        );
+      }
+    } catch (fcmError) {
+      console.error(`FCM multicast failed: ${fcmError}`);
+    }
+
     return sendSuccess(res, evento, 'Evento creado con éxito', 201);
   } catch (error) {
     return sendError(res, error, 'No se pudo crear el evento');

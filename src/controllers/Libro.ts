@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import path from 'path';
 import LibroService from '../services/Libro';
 import { adminLibroSearchFields, AdminLibroSearchField } from '../services/Libro';
 import Usuario from '../models/Usuario';
@@ -8,6 +9,18 @@ import { sendSuccess, sendError } from '../library/ApiResponse';
 import { actualizarProgresoRetos } from '../services/Retos';
 import { sendPushNotification } from '../services/NotificationService';
 import Libro from '../models/Libro';
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(path.resolve('src/config/firebaseAccountKey.json')),
+    });
+    console.log('Firebase Admin inicializado correctamente en el Backend');
+  } catch (error) {
+    console.error('Error inicializando Firebase Admin:', error);
+  }
+}
 
 const createLibro = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -62,6 +75,34 @@ const createLibro = async (req: Request, res: Response, next: NextFunction) => {
         }
       } catch (pushErr: any) {
         Logging.error(`Error sending push notifications for new book: ${pushErr.message}`);
+      }
+      try {
+        const usuariosConToken = await Usuario.find({
+          fcmToken: { $exists: true, $ne: null },
+          _id: { $ne: userId },
+        });
+
+        const tokensDestinatarios = usuariosConToken
+          .map((user) => (user as any).fcmToken)
+          .filter((token) => token !== undefined && token !== '');
+
+        if (tokensDestinatarios.length > 0) {
+          const titleBook = (savedLibro as any).title || 'Sin título';
+          const mensajePush = {
+            notification: {
+              title: '📚 ¡Nuevo libro en EA-VIVEBOOK!',
+              body: `Se ha publicado: "${titleBook}". ¡Entra a echarle un vistazo!`,
+            },
+            tokens: tokensDestinatarios,
+          };
+
+          const response = await admin.messaging().sendEachForMulticast(mensajePush);
+          Logging.info(
+            `FCM: Notificaciones enviadas. Éxito: ${response.successCount}, Fallos: ${response.failureCount}`,
+          );
+        }
+      } catch (fcmError) {
+        Logging.error(`FCM multicast failed: ${fcmError}`);
       }
     } else {
       Logging.warning('Book created but could not link to user (savedLibro or userId missing)');

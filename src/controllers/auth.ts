@@ -298,6 +298,50 @@ export const getProfileLibros = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const updateFcmToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId;
+    const { fcmToken } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'No autorizado, falta ID de usuario' });
+    }
+
+    if (!fcmToken) {
+      return sendError(
+        res,
+        'El fcmToken es requerido en el cuerpo de la petición',
+        'Bad Request',
+        400,
+      );
+    }
+
+    const usuarioActualizado = await Usuario.findByIdAndUpdate(
+      userId,
+      { fcmToken: fcmToken },
+      { new: true },
+    );
+
+    if (!usuarioActualizado) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    Logging.info(`Token FCM actualizado para el usuario: ${userId}`);
+    return sendSuccess(res, null, 'Token de notificaciones actualizado con éxito');
+  } catch (error) {
+    Logging.error(`Error en updateFcmToken: ${error}`);
+    return sendError(res, error, 'Error al guardar el token de notificaciones');
+  }
+};
+
 //#endregion Autenticacion
 
-export default { signup, signupAdmin, signin, profile, socialLogin, getProfileLibros };
+export default {
+  signup,
+  signupAdmin,
+  signin,
+  profile,
+  updateFcmToken,
+  socialLogin,
+  getProfileLibros,
+};
