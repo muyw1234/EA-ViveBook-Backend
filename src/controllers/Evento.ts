@@ -9,7 +9,6 @@ import Usuario from '../models/Usuario';
 import Evento from '../models/Evento';
 import admin from 'firebase-admin';
 import path from 'path';
-import Usuario from '../models/Usuario';
 
 const createEvento = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId;

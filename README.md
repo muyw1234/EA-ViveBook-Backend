@@ -848,4 +848,4 @@ npm run build
 npm run lint
 ```
 
-La suite actual ejecuta tests de integracion sobre Express + MongoDB en memoria y cubre los flujos principales de negocio del backend.
+La suite actual ejecuta tests de integracion sobre Express + MongoDB en memoria y cubre los flujos principales de negocio del backend..
