@@ -10,5 +10,6 @@
     "skipLibCheck": true,
     "typeRoots": ["./src/@types", "./node_modules/@types/express"]
   },
-  "include": ["src/**/*", "src/models/.ts"]
+  "include": ["src/**/*", "src/models/.ts"],
+  "extends": "expo/tsconfig.base"
 }
