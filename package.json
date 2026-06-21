@@ -17,7 +17,8 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "populate:db:prod": "node build/populateDB.js"
   },
   "author": "",
   "license": "MIT",
